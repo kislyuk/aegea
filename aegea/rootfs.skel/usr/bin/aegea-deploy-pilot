@@ -33,14 +33,9 @@ def clean_old_builds(build_root, prefix, min_old_builds=2):
         logging.warn("Deleting old build %s", d)
         shutil.rmtree(d, ignore_errors=True)
 
-def run_git_auth(*cmd, **kwargs):
-    shellcode = ";".join("set -eo pipefail",
-                         "trap 'ssh-agent -k' EXIT",
-                         "eval $(ssh-agent)",
-                         "aegea-get-secret {} | ssh-add /dev/stdin",
-                         "git ")
-    shellcode = shellcode.format(args.deploy_key_name)
-    return subprocess.check_call(shellcode + " ".join(cmd), shell=True, executable="/bin/bash", **kwargs)
+def run_git_command(*cmd, **kwargs):
+    kwargs["env"] = dict(kwargs.get("env", os.environ), GIT_SSH_COMMAND="aegea-git-ssh-helper")
+    return subprocess.check_call(["git"] + cmd, **kwargs)
 
 def clone_and_build(branch, destination):
     if not os.path.exists(os.path.dirname(destination)):
@@ -50,14 +45,12 @@ def clone_and_build(branch, destination):
     # TODO: sanity check: is event timestamp within X of now?
     logging.info("Deploying %s to %s", branch, deploy_dir)
     if os.path.lexists(destination):
-        subprocess.check_call(["git", "clone", "--recurse-submodules", "--branch", branch,
-                               destination, deploy_dir])
-        subprocess.check_call(["git", "remote", "set-url", "origin", args.github_url], cwd=deploy_dir)
-        run_git_auth("fetch", "origin", branch, cwd=deploy_dir)
-        subprocess.check_call(["git", "checkout", "--force", "origin/" + branch], cwd=deploy_dir)
+        run_git_command("clone", "--recurse-submodules", "--branch", branch, destination, deploy_dir)
+        run_git_command("remote", "set-url", "origin", args.github_url, cwd=deploy_dir)
+        run_git_command("fetch", "origin", branch, cwd=deploy_dir)
+        run_git_command("checkout", "--force", "origin/" + branch, cwd=deploy_dir)
     else:
-        run_git_auth("clone", "--recurse-submodules", "--branch", branch, "--depth=1",
-                     args.github_url, deploy_dir)
+        run_git_command("clone", "--recurse-submodules", "--branch", branch, "--depth=1", args.github_url, deploy_dir)
     subprocess.check_call(["make", "-C", deploy_dir])
     os.symlink(deploy_dir, destination + "_staged")
     try:
@@ -133,7 +126,7 @@ def parse_args():
     args.github_url = "git@github.com:{}/{}".format(args.gh_owner_name, args.gh_repo_name)
     args.deploy_location = os.path.abspath(os.path.join(args.deploy_location, args.gh_owner_name, args.gh_repo_name))
     if not args.deploy_key_name:
-        args.deploy_key_name = "deploy.{}.{}".format(args.gh_repo_name, args.branch)
+        args.deploy_key_name = "deploy.{}.{}".format(args.gh_owner_name, args.gh_repo_name)
     return args
 
 args = parse_args()

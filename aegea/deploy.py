@@ -156,7 +156,7 @@ def grant(args):
         role = get_iam_role_for_instance(args.iam_role_or_instance)
     role.attach_policy(PolicyArn=ensure_deploy_iam_policy().arn)
     gh_owner_name, gh_repo_name = parse_repo_name(args.repo)
-    secret = secrets.put(argparse.Namespace(secret_name="deploy.{}.{}".format(gh_repo_name, args.branch),
+    secret = secrets.put(argparse.Namespace(secret_name="deploy.{}.{}".format(gh_owner_name, gh_repo_name),
                                             iam_role=role.name,
                                             instance_profile=None,
                                             iam_group=None,
