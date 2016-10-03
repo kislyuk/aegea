@@ -8,8 +8,8 @@ import os, sys, logging, pkgutil, importlib
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger("botocore.vendored.requests").setLevel(logging.ERROR)
 
-import argcomplete
-import aegea
+import argcomplete  # noqa
+import aegea  # noqa
 
 for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
     importlib.import_module((aegea.__package__ or "aegea") + "." + modname)
