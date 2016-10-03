@@ -46,6 +46,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 from . import register_parser, logger, secrets
+from .util import GitHub
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate, BOLD
 from .util.aws import (ARN, resources, clients, IAMPolicyBuilder, resolve_instance_id, get_iam_role_for_instance,
                        expect_error_codes, ensure_iam_policy)
@@ -64,14 +65,19 @@ def parse_repo_name(repo):
     return gh_owner_name, gh_repo_name
 
 def get_repo(url):
-    import github3
-    try:
-        gh = github3.login(token=os.environ["GH_AUTH"])
-    except Exception:
-        msg = "GitHub login failed. Please get a token at https://github.com/settings/tokens and set the GH_AUTH environment variable to its value." # noqa
-        raise SystemExit(msg)
     gh_owner_name, gh_repo_name = parse_repo_name(url)
-    return gh.repository(gh_owner_name, gh_repo_name)
+    return GitHub.session().repository(gh_owner_name, gh_repo_name)
+
+def private_submodules(url):
+    repo = get_repo(url)
+    head_sha = repo.ref(os.path.join("heads", repo.default_branch)).object.sha
+    for tree in repo.tree(head_sha).recurse().tree:
+        if tree.type == "commit":
+            submodule_url = repo.contents(tree.path).submodule_git_url
+            for submodule in private_submodules(submodule_url):
+                yield submodule
+            if get_repo(submodule_url).private:
+                yield submodule_url
 
 def configure(args):
     repo = get_repo(args.repo)
@@ -145,24 +151,25 @@ def grant(args):
     """
     Given an IAM role or instance name, attach an IAM policy granting
     appropriate permissions to subscribe to deployments. Given a
-    GitHub repo URL, create and record a deployment key accessible to
+    GitHub repo URL, create and record deployment keys for the repo
+    and any of its private submodules, making the keys accessible to
     the IAM role.
     """
-    repo = get_repo(args.repo)
     try:
         role = resources.iam.Role(args.iam_role_or_instance)
         role.load()
     except ClientError:
         role = get_iam_role_for_instance(args.iam_role_or_instance)
     role.attach_policy(PolicyArn=ensure_deploy_iam_policy().arn)
-    gh_owner_name, gh_repo_name = parse_repo_name(args.repo)
-    secret = secrets.put(argparse.Namespace(secret_name="deploy.{}.{}".format(gh_owner_name, gh_repo_name),
-                                            iam_role=role.name,
-                                            instance_profile=None,
-                                            iam_group=None,
-                                            iam_user=None,
-                                            generate_ssh_key=True))
-    repo.create_key(role.name, secret["ssh_public_key"])
+    for private_repo in [args.repo] + list(private_submodules(args.repo)):
+        gh_owner_name, gh_repo_name = parse_repo_name(private_repo)
+        secret = secrets.put(argparse.Namespace(secret_name="deploy.{}.{}".format(gh_owner_name, gh_repo_name),
+                                                iam_role=role.name,
+                                                instance_profile=None,
+                                                iam_group=None,
+                                                iam_user=None,
+                                                generate_ssh_key=True))
+        get_repo(private_repo).create_key(role.name, secret["ssh_public_key"])
 
 parser = register_parser(grant, parent=deploy_parser)
 parser.add_argument("iam_role_or_instance")
