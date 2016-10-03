@@ -204,8 +204,8 @@ def format_cell(cell):
     if isinstance(cell, timedelta):
         from babel import dates
         cell = dates.format_timedelta(-cell, add_direction=True)
-    if isinstance(cell, dict):
-        cell = json.dumps(cell)
+    if isinstance(cell, (list, dict)):
+        cell = json.dumps(cell, default=lambda x: str(x))
     return cell
 
 def get_cell(resource, field, transform=None):
