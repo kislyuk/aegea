@@ -16,3 +16,5 @@ if args.user_at_host == "git@github.com" and args.command.startswith("git-upload
         repo = repo[:-len(".git")]
     cmd = "ssh-agent bash -c 'aegea-get-secret deploy.{}.{} | ssh-add /dev/stdin; ssh {} {}'"
     subprocess.check_call(cmd.format(owner, repo, args.user_at_host, args.command), shell=True)
+else:
+    os.execvp("ssh", ["ssh", args.user_at_host, args.command])
