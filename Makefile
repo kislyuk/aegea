@@ -13,7 +13,7 @@ test_deps:
 
 lint: test_deps
 	./setup.py flake8
-	flake8 --filename='*' --exclude='*format-ephemeral-storage*' scripts/* aegea/rootfs.skel/usr/bin/aegea-*
+	flake8 --filename='*' $$(grep -l '/usr/bin/env python' scripts/* aegea/rootfs.skel/usr/bin/aegea-*)
 
 test: test_deps lint
 	coverage run setup.py test
