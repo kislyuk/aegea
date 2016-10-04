@@ -46,7 +46,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 from . import register_parser, logger, secrets
-from .util import GitHub
+from .util.git import parse_repo_name, get_repo, private_submodules
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate, BOLD
 from .util.aws import (ARN, resources, clients, IAMPolicyBuilder, resolve_instance_id, get_iam_role_for_instance,
                        expect_error_codes, ensure_iam_policy)
@@ -56,28 +56,6 @@ def deploy(args):
 
 deploy_parser = register_parser(deploy, help="Manage deployments of GitHub repositories", description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
-
-def parse_repo_name(repo):
-    if repo.endswith(".git"):
-        repo = repo[:-len(".git")]
-    repo = repo.split(":")[-1]
-    gh_owner_name, gh_repo_name = repo.split("/")[-2:]
-    return gh_owner_name, gh_repo_name
-
-def get_repo(url):
-    gh_owner_name, gh_repo_name = parse_repo_name(url)
-    return GitHub.session().repository(gh_owner_name, gh_repo_name)
-
-def private_submodules(url):
-    repo = get_repo(url)
-    head_sha = repo.ref(os.path.join("heads", repo.default_branch)).object.sha
-    for tree in repo.tree(head_sha).recurse().tree:
-        if tree.type == "commit":
-            submodule_url = repo.contents(tree.path).submodule_git_url
-            for submodule in private_submodules(submodule_url):
-                yield submodule
-            if get_repo(submodule_url).private:
-                yield submodule_url
 
 def configure(args):
     repo = get_repo(args.repo)

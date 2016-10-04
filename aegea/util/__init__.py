@@ -95,16 +95,3 @@ def describe_cidr(cidr):
         except Exception:
             whois_names = [cidr]
     return ", ".join(whois_names)
-
-class GitHub:
-    _session = None
-    @classmethod
-    def session(cls):
-        if cls._session is None:
-            import github3
-            try:
-                cls._session = github3.login(token=os.environ["GH_AUTH"])
-            except Exception:
-                msg = "GitHub login failed. Please get a token at https://github.com/settings/tokens and set the GH_AUTH environment variable to its value." # noqa
-                raise Exception(msg)
-        return cls._session

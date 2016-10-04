@@ -13,6 +13,7 @@ from aegea.util.aws import (resolve_ami, SpotFleetBuilder, IAMPolicyBuilder, loc
                             ARN, DNSZone, get_user_data)
 from aegea.util.exceptions import AegeaException
 from aegea.util.compat import USING_PYTHON2, str
+from aegea.util.git import private_submodules
 
 for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
     importlib.import_module((aegea.__package__ or "aegea") + "." + modname)
@@ -197,6 +198,11 @@ class TestAegea(unittest.TestCase):
         self.call("aegea secrets ls --json", shell=True, expect=unauthorized_ok)
         self.call("aegea secrets get test_secret --iam-role aegea.launch", shell=True, expect=unauthorized_ok)
         self.call("aegea secrets delete test_secret --iam-role aegea.launch", shell=True, expect=unauthorized_ok)
+
+    @unittest.skipUnless("GH_AUTH" in os.environ, "requires GitHub credentials")
+    def test_git_utils(self):
+        for submodule in private_submodules("git@github.com:ansible/ansible.git"):
+            print(submodule)
 
 if __name__ == '__main__':
     unittest.main()
