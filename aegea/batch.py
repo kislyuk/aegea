@@ -36,6 +36,9 @@ while [[ ! -e $devnode ]]; do sleep 1; done
 mkfs.ext4 $devnode
 mount $devnode %s""" # noqa
 
+efs_vol_shellcode = """ mkdir -p %s
+NFS_END_POINT=$(getent hosts fs-79369430.efs.us-east-1.amazonaws.com | cut -f 1 -d " ")
+mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_END_POINT:/ %s"""
 def batch(args):
     batch_parser.print_help()
 
@@ -67,13 +70,11 @@ def delete_queue(args):
 
 parser = register_parser(delete_queue, parent=batch_parser, help="Delete a Batch queue")
 parser.add_argument("name")
-
 def compute_environments(args):
     table = clients.batch.describe_compute_environments()["computeEnvironments"]
     page_output(tabulate(table, args))
 
 parser = register_listing_parser(compute_environments, parent=batch_parser, help="List Batch compute environments")
-
 def create_compute_environment(args):
     batch_iam_role = ensure_iam_role(args.service_role, trust=["batch"], policies=["service-role/AWSBatchServiceRole"])
     vpc = ensure_vpc()
@@ -157,6 +158,11 @@ def get_command_and_env(args):
         args.volumes.append(["/dev", "/dev"])
         for mountpoint, size_gb in args.storage:
             shellcode += (ebs_vol_mgr_shellcode % (size_gb, mountpoint)).splitlines()
+    elif args.efs_storage:
+        args.privileged = True
+        commands = (efs_vol_shellcode % (args.efs_storage, args.efs_storage)).splitlines()
+        shellcode += commands
+
     if args.execute:
         payload = base64.b64encode(args.execute.read()).decode()
         args.environment.append(dict(name="BATCH_SCRIPT_B64", value=payload))
@@ -281,6 +287,8 @@ group.add_argument("--job-role", metavar="IAM_ROLE", default=__name__ + ".worker
                    help="Name of IAM role to grant to the job")
 group.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
                    type=lambda x: x.rstrip("GBgb").split("=", 1), default=[])
+group.add_argument("--efs-storage", action="store", dest="efs_storage", default=False,
+                   help="mount nfs drive to the mount point specified. i.e. --efs-storage /mnt")
 submit_parser.add_argument("--restart", help="Number of times to restart the job upon failure", type=int, default=0)
 submit_parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of submitting job")
 
