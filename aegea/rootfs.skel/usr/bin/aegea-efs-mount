@@ -39,7 +39,12 @@ for mountpoint, filesystem in mountpoints.items():
                                                         fs=filesystem["FileSystemId"],
                                                         region=efs.meta.region_name,
                                                         domain=services_domain)
-    mount_procs[mountpoint] = subprocess.Popen(["mount", "-t", "nfs4", fs_url, mountpoint])
+    # JHB: Changed to the following defaults.
+    mount_procs[mountpoint] = subprocess.Popen(
+        ["mount", "-t", "nfs4", "-o",
+         "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2",
+         fs_url, mountpoint]
+    )
 
 for m, p in mount_procs.items():
     if not os.path.isdir(m):

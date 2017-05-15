@@ -6,7 +6,7 @@ Environment=AWS_CONFIG_FILE=/etc/aws.conf
 ExecStart=/usr/bin/aegea-efs-mount
 StandardOutput=syslog
 Restart=on-failure
-RestartSec=20
+RestartSec=60
 
 [Install]
 WantedBy=remote-fs.target

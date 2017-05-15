@@ -29,13 +29,16 @@ def build_ami(args):
         launch_args.iam_role = None
         launch_args.cloud_config_data.update(rootfs_skel_dirs=args.rootfs_skel_dirs)
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
+    ci_timeout = args.cloud_init_timeout
+    if ci_timeout <= 0:
+        ci_timeout = 99999
     ssh_client = AegeaSSHClient()
     ssh_client.load_system_host_keys()
     ssh_client.connect(instance.public_dns_name, username="ubuntu", key_filename=get_ssh_key_path(ssh_key_name))
-    sys.stderr.write("Waiting for cloud-init...")
+    sys.stderr.write("Waiting %d seconds for cloud-init..." % ci_timeout)
     sys.stderr.flush()
     devnull = open(os.devnull, "w")
-    for i in range(900):
+    for i in range(ci_timeout):
         try:
             ssh_client.check_output("ls /var/lib/cloud/data/result.json", stderr=devnull)
             res = ssh_client.check_output("sudo jq .v1.errors /var/lib/cloud/data/result.json", stderr=devnull)
@@ -85,3 +88,5 @@ parser.add_argument("--base-ami-product",
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)
+parser.add_argument("--cloud-init-timeout", type=int, default=-1,
+                    help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
