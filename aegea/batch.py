@@ -237,6 +237,9 @@ def ensure_job_definition(args):
             container_props["mountPoints"].append({"sourceVolume": "vol%d" % i, "containerPath": guest_path})
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"],
                                policies=["AmazonEC2FullAccess", "AmazonDynamoDBFullAccess", "AmazonS3FullAccess"])
+    if args.ulimits_nofile:
+        container_props.update(ulimits=[])
+        container_props["ulimits"].append({"name": "nofile", "hardLimit": args.ulimits_nofile, "softLimit": args.ulimits_nofile})
     container_props.update(jobRoleArn=iam_role.arn)
     return clients.batch.register_job_definition(jobDefinitionName=__name__.replace(".", "_"),
                                                  type="container",
@@ -304,6 +307,7 @@ ecs_img_arg = img_group.add_argument("--ecs-image", "--ecr-image", "-i", metavar
                                      help="Name of Docker image residing in this account's Elastic Container Registry")
 ecs_img_arg.completer = ecr_image_name_completer
 group.add_argument("--vcpus", type=int, default=1)
+group.add_argument("--ulimits_nofile", type=int, default=1000000)
 group.add_argument("--memory-mb", dest="memory", type=int, default=1024)
 group.add_argument("--privileged", action="store_true", default=False)
 group.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])
