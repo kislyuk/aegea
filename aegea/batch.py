@@ -255,8 +255,6 @@ def ensure_queue(name):
         return create_queue(cq_args)
 
 def submit(args):
-    # FIXME
-    # ensure_lambda("aegea_batch_monitor")
     ensure_log_group("docker")
     ensure_log_group("syslog")
     command, environment = get_command_and_env(args)
@@ -362,53 +360,72 @@ def format_job_status(status):
 
 class LogReader:
     log_group_name, next_page_token = "/aws/batch/job", None
-    def __init__(self, job_name, job_id, head=None, tail=None):
-        self.log_stream_name_prefix = "{}/{}".format(job_name, job_id)
-        self.describe_log_streams = clients.logs.get_paginator("describe_log_streams")
+    def __init__(self, log_stream_name, head=None, tail=None):
+        self.log_stream_name = log_stream_name
         self.head, self.tail = head, tail
         self.next_page_key = "nextForwardToken" if self.tail is None else "nextBackwardToken"
 
     def __iter__(self):
         page = None
-        log_stream_args = dict(logGroupName=self.log_group_name, logStreamNamePrefix=self.log_stream_name_prefix)
-        for log_stream in paginate(self.describe_log_streams, **log_stream_args):
-            get_args = dict(logGroupName=self.log_group_name, logStreamName=log_stream["logStreamName"],
-                            limit=min(self.head or 10000, self.tail or 10000))
-            get_args["startFromHead"] = True if self.tail is None else False
-            if self.next_page_token:
-                get_args["nextToken"] = self.next_page_token
-            while True:
-                page = clients.logs.get_log_events(**get_args)
-                for event in page["events"]:
-                    if "timestamp" in event and "message" in event:
-                        yield event
-                get_args["nextToken"] = page[self.next_page_key]
-                if self.head is not None or self.tail is not None or len(page["events"]) == 0:
-                    break
+        get_args = dict(logGroupName=self.log_group_name, logStreamName=self.log_stream_name,
+                        limit=min(self.head or 10000, self.tail or 10000))
+        get_args["startFromHead"] = True if self.tail is None else False
+        if self.next_page_token:
+            get_args["nextToken"] = self.next_page_token
+        while True:
+            page = clients.logs.get_log_events(**get_args)
+            for event in page["events"]:
+                if "timestamp" in event and "message" in event:
+                    yield event
+            get_args["nextToken"] = page[self.next_page_key]
+            if self.head is not None or self.tail is not None or len(page["events"]) == 0:
+                break
         if page:
             LogReader.next_page_token = page[self.next_page_key]
 
 def get_logs(args):
-    for event in LogReader(args.job_name, args.job_id, head=args.head, tail=args.tail):
+    for event in LogReader(args.log_stream_name, head=args.head, tail=args.tail):
         print(str(Timestamp(event["timestamp"])), event["message"])
 
+def save_job_desc(job_desc):
+    try:
+        cprops = dict(image="busybox", vcpus=1, memory=4,
+                      environment=[dict(name="job_desc", value=json.dumps(job_desc))])
+        jd_name = "{}_job_desc_{}".format(__name__.replace(".", "_"), job_desc["jobId"])
+        clients.batch.register_job_definition(jobDefinitionName=jd_name, type="container", containerProperties=cprops)
+    except:
+        raise
+
+def get_job_desc(job_id):
+    try:
+        return clients.batch.describe_jobs(jobs=[job_id])["jobs"][0]
+    except IndexError:
+        jd_name = "{}_job_desc_{}".format(__name__.replace(".", "_"), job_id)
+        jd = clients.batch.describe_job_definitions(jobDefinitionName=jd_name)["jobDefinitions"][0]
+        return json.loads(jd["containerProperties"]["environment"][0]["value"])
+
 def watch(args):
-    args.job_name = clients.batch.describe_jobs(jobs=[args.job_id])["jobs"][0]["jobName"]
+    job_desc = get_job_desc(args.job_id)
+    args.job_name = job_desc["jobName"]
     logger.info("Watching job %s (%s)", args.job_id, args.job_name)
     last_status = None
     while last_status not in {"SUCCEEDED", "FAILED"}:
-        job_desc = clients.batch.describe_jobs(jobs=[args.job_id])["jobs"][0]
+        job_desc = get_job_desc(args.job_id)
         if job_desc["status"] != last_status:
             logger.info("Job %s %s", args.job_id, format_job_status(job_desc["status"]))
             last_status = job_desc["status"]
+            if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
+                logger.info("Job %s log stream: %s", args.job_id, job_desc["container"]["logStreamName"])
+                save_job_desc(job_desc)
         if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
+            args.log_stream_name = job_desc["container"]["logStreamName"]
             get_logs(args)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
+        time.sleep(0.2)
 
 get_logs_parser = register_parser(get_logs, parent=batch_parser, help="Retrieve logs for a Batch job")
-get_logs_parser.add_argument("job_id")
-get_logs_parser.add_argument("job_name", nargs="?", default=__name__.replace(".", "_"))
+get_logs_parser.add_argument("log_stream_name")
 watch_parser = register_parser(watch, parent=batch_parser, help="Monitor a running Batch job and stream its logs")
 watch_parser.add_argument("job_id")
 for parser in get_logs_parser, watch_parser:
