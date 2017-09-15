@@ -393,8 +393,8 @@ def save_job_desc(job_desc):
                       environment=[dict(name="job_desc", value=json.dumps(job_desc))])
         jd_name = "{}_job_desc_{}".format(__name__.replace(".", "_"), job_desc["jobId"])
         clients.batch.register_job_definition(jobDefinitionName=jd_name, type="container", containerProperties=cprops)
-    except:
-        raise
+    except Exception as e:
+        logger.debug("Error while saving job description: %s", e)
 
 def get_job_desc(job_id):
     try:
