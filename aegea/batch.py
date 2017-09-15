@@ -155,15 +155,13 @@ def ensure_dynamodb_table(name, hash_key_name, read_capacity_units=5, write_capa
     return table
 
 def get_command_and_env(args):
+    # shellcode = ['for var in ${{!AWS_BATCH_@}}; do echo "{}.env.$var=${{!var}}"; done'.format(__name__)]
     shellcode = ["set -a",
                  "if [ -f /etc/environment ]; then source /etc/environment; fi",
                  "if [ -f /etc/default/locale ]; then source /etc/default/locale; fi",
                  "set +a",
                  "if [ -f /etc/profile ]; then source /etc/profile; fi",
                  "set -euo pipefail"]
-    if args.restart:
-        restart_policy = dict(tries=args.restart, prior_failures=[])
-        args.environment.append(dict(name="AEGEA_RESTART_POLICY", value=json.dumps(restart_policy)))
     if args.storage:
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
@@ -244,7 +242,8 @@ def ensure_job_definition(args):
     container_props.update(jobRoleArn=iam_role.arn)
     return clients.batch.register_job_definition(jobDefinitionName=__name__.replace(".", "_"),
                                                  type="container",
-                                                 containerProperties=container_props)
+                                                 containerProperties=container_props,
+                                                 retryStrategy=dict(attempts=args.retry_attempts))
 
 def ensure_queue(name):
     cq_args = argparse.Namespace(name=name, priority=5, compute_environments=[name])
@@ -259,7 +258,9 @@ def submit(args):
     ensure_log_group("syslog")
     command, environment = get_command_and_env(args)
     if args.job_definition_arn is None:
-        args.job_definition_arn = ensure_job_definition(args)["jobDefinitionArn"]
+        jd_res = ensure_job_definition(args)
+        args.job_definition_arn = jd_res["jobDefinitionArn"]
+        args.name = "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
     submit_args = dict(jobName=args.name,
                        jobQueue=args.queue,
                        dependsOn=[dict(jobId=dep) for dep in args.depends_on],
@@ -283,7 +284,7 @@ def submit(args):
     return job
 
 submit_parser = register_parser(submit, parent=batch_parser, help="Submit a job to a Batch queue")
-submit_parser.add_argument("--name", default=__name__.replace(".", "_"))
+submit_parser.add_argument("--name")
 submit_parser.add_argument("--queue", default=__name__.replace(".", "_"))
 submit_parser.add_argument("--depends-on", nargs="+", metavar="JOB_ID", default=[])
 submit_parser.add_argument("--job-definition-arn")
@@ -323,7 +324,8 @@ group.add_argument("--efs-storage", action="store", dest="efs_storage", default=
                    help="mount nfs drive to the mount point specified. i.e. --efs-storage /mnt")
 submit_parser.add_argument("--timeout",
                            help="Terminate (and possibly restart) the job after this time (use suffix s, m, h, d, w)")
-submit_parser.add_argument("--restart", help="Number of times to restart the job upon failure", type=int, default=0)
+submit_parser.add_argument("--retry-attempts", type=int, default=1,
+                           help="Number of times to restart the job upon failure")
 submit_parser.add_argument("--dry-run", action="store_true", help="Gather arguments and stop short of submitting job")
 
 def terminate(args):

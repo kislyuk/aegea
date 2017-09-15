@@ -67,6 +67,7 @@ def initialize():
 
 def main(args=None):
     parsed_args = parser.parse_args(args=args)
+    logger.setLevel(parsed_args.log_level)
     has_attrs = (getattr(parsed_args, "sort_by", None) and
                  getattr(parsed_args, "columns", None))
     if has_attrs and parsed_args.sort_by not in parsed_args.columns:
@@ -116,10 +117,9 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
                            help="When printing tables, truncate column contents to this width. Set to 0 for auto fit.")
     subparser.add_argument("--json", action="store_true",
                            help="Output tabular data as a JSON-formatted list of objects")
-    subparser.add_argument("--log-level", type=logger.setLevel,
+    subparser.add_argument("--log-level", default=config.get("log_level"),
                            help=str([logging.getLevelName(i) for i in range(0, 60, 10)]),
-                           choices={logging.getLevelName(i) for i in range(0, 60, 10)},
-                           default=config.get("log_level"))
+                           choices={logging.getLevelName(i) for i in range(0, 60, 10)})
     subparser.set_defaults(entry_point=function)
     if parent and sys.version_info < (2, 7, 9): # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
