@@ -9,6 +9,8 @@ from .util.crypto import ensure_ssh_key, get_ssh_key_path
 from .util.printing import GREEN
 from .launch import launch, parser as launch_parser
 
+from botocore.exceptions import WaiterError
+
 def build_ami(args):
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
@@ -65,12 +67,19 @@ def build_ami(args):
     tags.update(Owner=ARN.get_iam_username(), AegeaVersion=__version__,
                 Base=base_ami.id, BaseName=base_ami.name, BaseDescription=base_ami.description or "")
     add_tags(image, **tags)
-    logger.info("Waiting for %s to become available...", image.id)
-    clients.ec2.get_waiter("image_available").wait(ImageIds=[image.id])
-    while resources.ec2.Image(image.id).state != "available":
+
+    attempts = 6 # Around 1 hour.
+    while resources.ec2.Image(image.id).state != "available" and attempts > 0:
+        logger.info("Waiting for %s to become available (attempt: %d)", image.id, attempts)
+        try:
+            clients.ec2.get_waiter("image_available").wait(ImageIds=[image.id])
+        except WaiterError as e:
+            logger.info("Waiter exceeded maximum attempts.")
+            attempts = attempts - 1
         sys.stderr.write(".")
         sys.stderr.flush()
         time.sleep(1)
+
     instance.terminate()
     return dict(ImageID=image.id, **tags)
 
@@ -89,5 +98,5 @@ parser.add_argument("--dry-run", "--dryrun", action="store_true")
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--cloud-init-timeout", type=int, default=-1,
-                    help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
+                    help="Approximate time in seconds to wait for cloud-init to complete.")
 parser.add_argument("--iam-role", default=__name__)

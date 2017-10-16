@@ -12,16 +12,13 @@ writing messages to this queue, and a GitHub post-commit hook to send
 messages to the queue using the user's IAM credentials.
 
 To set up instances to track deployments, create a systemd service
-by copying /lib/systemd/system/aegea-deploy@.service to
-/etc/systemd/system/multi-user.target.wants/aegea-deploy@org-repo-branch
-and replacing the environment variables within aegea-deploy@.service:
-    Environment=REPOORG={repoOrg}
-    Environment=REPONAME={repoName}
-    Environment=REPOBRANCH={repoBranch}
-    Environment=MAKETARGET={makeTarget}
-    Environment=MAKERELOADTARGET={makeReloadTarget}
-Finally, run "systemctl daemon-reload" to inform systemd of the new
-configuration.
+symlink like so:
+
+    cd /etc/systemd/system/multi-user.target.wants
+    ln -s /lib/systemd/system/aegea-deploy@.service aegea-deploy@<owner>-<repo>-<branch>.service
+
+Replace <owner>, <repo>, and <branch> with your GitHub user or org name,
+repo name, and branch to deploy from.
 
 The instance using aegea deploy must have permissions to access the
 SNS-SQS bus and the S3 bucket containing Aegea secrets (see ``aegea
@@ -31,11 +28,9 @@ grant appropriate permissions to an IAM role or instance.
 Any updates to the branch will trigger a rebuild. By
 default, the build location is /opt/<owner>/<repo>. Each update is
 pulled and built in a separate timestamped subdirectory by running
-``make <MAKETARGET>`` in the repo root, and symlinked upon success.
-Once the update is successfully built, the daemon will run
-``make <RELOADTARGET>`` in the repo root to reload any services
-the app needs to run.
-(Where <MAKETARGET>, <RELOADTARGET> defined in aegea-deploy@.service)
+``make`` in the repo root, and symlinked upon success. Once the update
+is successfully built, the daemon will run ``make reload`` in the repo
+root to reload any services the app needs to run.
 
 You can also manually trigger a rebuild with a service reload:
 

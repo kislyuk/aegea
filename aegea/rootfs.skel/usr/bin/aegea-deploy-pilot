@@ -51,16 +51,14 @@ def clone_and_build(branch, destination):
         run_git_command("checkout", "-B", branch, "--track", "origin/" + branch, cwd=deploy_dir)
     else:
         run_git_command("clone", "--recurse-submodules", "--branch", branch, "--depth=1", args.github_url, deploy_dir)
-
-    subprocess.check_call(["make", "-C", deploy_dir] + ([args.make_target] if args.make_target else []))
-
+    subprocess.check_call(["make", "-C", deploy_dir])
     os.symlink(deploy_dir, destination + "_staged")
     try:
         os.unlink(destination)
     except Exception:
         pass
     os.rename(destination + "_staged", destination)
-    subprocess.check_call(["make", "-C", deploy_dir, args.make_reload_target if args.make_reload_target else "reload"])
+    subprocess.check_call(["make", "-C", deploy_dir, "reload"])
 
 def update_status(**updates):
     try:
@@ -97,10 +95,7 @@ def deploy(branch):
 def init_queue():
     topic_name = "github-{}-{}-events".format(args.gh_owner_name, args.gh_repo_name)
     topic = get_topic(topic_name)
-    queue_name = "deployment-{on}-{rn}-{bn}-{iid}".format(on=args.gh_owner_name,
-                                                          rn=args.gh_repo_name,
-                                                          bn=args.gh_branch_name,
-                                                          iid=instance_id)
+    queue_name = "{}-{}-{}".format(topic_name, instance_id, os.getpid())
     queue = sqs.create_queue(QueueName=queue_name)
 
     policy = dict(Version="2012-10-17",
@@ -115,33 +110,23 @@ def init_queue():
     return queue
 
 def parse_args():
-    org = os.environ.get("REPOORG")
-    name = os.environ.get("REPONAME")
-    branch = os.environ.get("REPOBRANCH")
-
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", required=name is None)
-    parser.add_argument("--branch", default="master")
+    parser.add_argument("--repo", required="SYSTEMD_INSTANCE_NAME" not in os.environ)
+    parser.add_argument("--branch", required="SYSTEMD_INSTANCE_NAME" not in os.environ)
     parser.add_argument("--deploy-location", default="/opt")
     parser.add_argument("--deploy-key-name")
     args = parser.parse_args()
 
-    if (org is None or name is None) and args.repo is not None:
-        org, name = args.repo.split("/")[-2:]
-        branch = "master"
-    args.gh_owner_name = org
-    args.gh_repo_name = name
-    args.gh_branch_name = branch
+    if "SYSTEMD_INSTANCE_NAME" in os.environ:
+        args.gh_owner_name, args.gh_repo_name, args.branch = os.environ["SYSTEMD_INSTANCE_NAME"].split("-", 2)[-3:]
+    else:
+        args.gh_owner_name, args.gh_repo_name = args.repo.split("/")[-2:]
 
     args.github_url = "git@github.com:{}/{}".format(args.gh_owner_name, args.gh_repo_name)
     args.deploy_location = os.path.abspath(os.path.join(args.deploy_location, args.gh_owner_name, args.gh_repo_name))
     if not args.deploy_key_name:
         args.deploy_key_name = "deploy.{}.{}".format(args.gh_owner_name, args.gh_repo_name)
-
-    args.make_target = os.environ.get("MAKETARGET")
-    args.make_reload_target = os.environ.get("MAKERELOADTARGET")
-
     return args
 
 args = parse_args()
@@ -154,12 +139,12 @@ queue = init_queue()
 
 if not os.path.exists(args.deploy_location):
     try:
-        deploy(args.gh_branch_name)
+        deploy(args.branch)
     except Exception as e:
         logging.error("Failed in launch deployment: %s", e)
         update_status(Status="Failed", Ref=get_deploy_desc(), Commit=get_deploy_rev())
 
-signal.signal(signal.SIGUSR1, lambda signum, frame: deploy(args.gh_branch_name))
+signal.signal(signal.SIGUSR1, lambda signum, frame: deploy(args.branch))
 
 while True:
     for message in queue.receive_messages(WaitTimeSeconds=20):

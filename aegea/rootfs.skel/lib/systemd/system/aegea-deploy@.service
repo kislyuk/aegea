@@ -4,11 +4,6 @@ Description=Aegea deploy pilot for %I
 [Service]
 Environment=AWS_CONFIG_FILE=/etc/aws.conf
 Environment=SYSTEMD_INSTANCE_NAME=%i
-Environment=REPOORG={repoOrg}
-Environment=REPONAME={repoName}
-Environment=REPOBRANCH={repoBranch}
-Environment=MAKETARGET={makeTarget}
-Environment=MAKERELOADTARGET={makeReloadTarget}
 ExecStart=/usr/bin/aegea-deploy-pilot
 ExecReload=/bin/kill -USR1 $MAINPID
 StandardOutput=syslog

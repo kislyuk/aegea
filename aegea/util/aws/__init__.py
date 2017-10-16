@@ -145,8 +145,12 @@ def ensure_s3_bucket(name=None, policy=None):
     if name is None:
         name = "aegea-assets-{}".format(ARN.get_account_id())
     bucket = resources.s3.Bucket(name)
-    bucket.create()
-    bucket.wait_until_exists()
+    try:
+        resources.s3.meta.client.head_bucket(Bucket=name)
+    except ClientError:
+        bucket.create(CreateBucketConfiguration=
+                      {'LocationConstraint':clients.s3.meta.region_name})
+        bucket.wait_until_exists()
     if policy:
         bucket.Policy().put(Policy=str(policy))
     return bucket

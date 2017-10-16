@@ -80,16 +80,30 @@ def launch(args):
         security_groups = [ensure_security_group(__name__, vpc)]
 
     ssh_host_key = new_ssh_key()
+
+
+    for fn in config.config_files:
+        config_dir = os.path.dirname(fn)
+        skel_dir = os.path.abspath(os.path.join(config_dir, "rootfs.skel"))
+        if os.path.exists(skel_dir):
+            args.cloud_config_data.setdefault("rootfs_skel_dirs",[])
+            args.cloud_config_data["rootfs_skel_dirs"].append( skel_dir )
+
+
+    logger.info("using the following roofs.skel directories: {}".format(":".join(args.cloud_config_data["rootfs_skel_dirs"])))
     user_data_args = dict(host_key=ssh_host_key,
                           commands=get_startup_commands(args, ARN.get_iam_username()),
                           packages=args.packages)
+
     user_data_args.update(dict(args.cloud_config_data))
+
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
                        SecurityGroupIds=[sg.id for sg in security_groups],
                        InstanceType=args.instance_type,
                        BlockDeviceMappings=get_bdm(),
                        UserData=get_user_data(**user_data_args))
+
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
         instance_profile = ensure_instance_profile(args.iam_role, policies=args.iam_policies)

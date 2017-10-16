@@ -20,20 +20,16 @@ def add_file_to_cloudinit_manifest(src_path, path, manifest):
 
 def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
     manifest = OrderedDict()
-    aegea_conf = os.getenv("AEGEA_CONFIG_FILE")
     targz = io.BytesIO()
     tar = tarfile.open(mode="w:gz", fileobj=targz) if dest == "tarfile" else None
 
     for rootfs_skel_dir in rootfs_skel_dirs:
         if rootfs_skel_dir == "auto":
-            fn = os.path.join(os.path.dirname(__file__), "..", "rootfs.skel")
-        elif aegea_conf:
-            # FIXME: not compatible with colon-separated AEGEA_CONFIG_FILE
-            fn = os.path.join(os.path.dirname(aegea_conf), rootfs_skel_dir)
+            fn = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "rootfs.skel"))
         elif os.path.exists(rootfs_skel_dir):
             fn = os.path.abspath(os.path.normpath(rootfs_skel_dir))
         else:
-            raise Exception("rootfs_skel directory {} not found".format(fn))
+            raise Exception("rootfs_skel directory {} not found".format(rootfs_skel_dir))
         logger.debug("Trying rootfs.skel: %s" % fn)
         if not os.path.exists(fn):
             raise Exception("rootfs_skel directory {} not found".format(fn))
@@ -76,16 +72,28 @@ def encode_cloud_config_payload(cloud_config_data, gzip=True):
     slug = "#cloud-config\n" + json.dumps(cloud_config_data, default=dict)
     return gzip_compress_bytes(slug.encode()) if gzip else slug
 
-def upload_bootstrap_asset(cloud_config_data, rootfs_skel_dirs):
+def upload_bootstrap_asset(cloud_config_data, rootfs_skel_dirs, use_cipher=False):
     key_name = "".join(random.choice(string.ascii_letters) for x in range(32))
     enc_key = "".join(random.choice(string.ascii_letters) for x in range(32))
+
     logger.info("Uploading bootstrap asset %s to S3", key_name)
     bucket = ensure_s3_bucket()
-    cipher = subprocess.Popen(["openssl", "aes-256-cbc", "-e", "-k", enc_key],
-                              stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    encrypted_tarfile = cipher.communicate(get_bootstrap_files(rootfs_skel_dirs, dest="tarfile"))[0]
-    bucket.upload_fileobj(io.BytesIO(encrypted_tarfile), key_name)
     url = clients.s3.generate_presigned_url(ClientMethod='get_object', Params=dict(Bucket=bucket.name, Key=key_name))
-    cmd = "curl -s '{url}' | openssl aes-256-cbc -d -k {key} | tar -xz --no-same-owner -C /"
-    cloud_config_data["runcmd"].insert(0, cmd.format(url=url, key=enc_key))
+    cmd = "curl -s '{url}'".format(url=url)
+    tarfile = get_bootstrap_files(rootfs_skel_dirs, dest="tarfile")
+
+    if use_cipher:
+        cipher = subprocess.Popen(["openssl", "aes-256-cbc", "-e", "-k", enc_key],
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        encrypted_tarfile = cipher.communicate(tarfile)[0]
+        bucket.upload_fileobj(io.BytesIO(encrypted_tarfile), key_name)
+        cmd = cmd + " | openssl aes-256-cbc -d -k {key}".format(key=enc_key)
+    else:
+        bucket.upload_fileobj(io.BytesIO(tarfile), key_name)
+
+    cmd = cmd + " | tar -xz --no-same-owner -C /"
+    cmd = cmd + " && aws s3 rm s3://{bucket}/{key}".format(bucket=bucket.name, key=key_name)
+
+    cloud_config_data["runcmd"].insert(0, cmd)
+
     del cloud_config_data["write_files"]
