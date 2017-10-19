@@ -48,8 +48,9 @@ output shows how to activate the virtualenv. The version of virtualenv packaged 
 
 Aegea Batch
 ~~~~~~~~~~~
-The `AWS Batch <https://aws.amazon.com/batch>`_ API currently requires you to use the us-east-1 region. You can use
-``aws configure`` to select this region.
+The `AWS Batch <https://aws.amazon.com/batch>`_ API lets you run non-interactive command line workflows in Docker
+containers, managing AWS ECS, Spot Fleet, and EC2 in your account on your behalf. Use the ``aegea batch`` family of commands
+to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
 
 `aegea/missions/docker-example/ <aegea/missions/docker-example/>`_ is a root directory of an **aegea mission** -
 a configuration management role. It has a rootfs.skel and a config.yml, which has directives to install packages,
