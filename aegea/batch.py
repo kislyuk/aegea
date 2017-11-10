@@ -31,7 +31,7 @@ vid=$(aws ec2 create-volume --availability-zone $az --size %s --volume-type st1 
 aws ec2 create-tags --resource $vid --tags Key=aegea_batch_job,Value=$AWS_BATCH_JOB_ID
 trap "umount /mnt || umount -l /mnt; aws ec2 detach-volume --volume-id $vid; while ! aws ec2 describe-volumes --volume-ids $vid | jq -re .Volumes[0].Attachments==[]; do sleep 1; done; aws ec2 delete-volume --volume-id $vid" EXIT
 while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != available ]]; do sleep 1; done
-for try in {1..9}; do if [[ $try == 9 ]]; then echo "Unable to mount $vid on $devnode"; exit 1; fi; for devnode in /dev/xvd{a..z}; do [[ -e $devnode ]] || break; done; aws ec2 attach-volume --instance-id $(echo "$iid" | jq -r .instanceId) --volume-id $vid --device $devnode || continue; break; done
+for try in {1..90}; do if [[ $try == 90 ]]; then echo "Unable to mount $vid on $devnode"; exit 1; fi; for devnode in /dev/xvd{a..z}; do [[ -e $devnode ]] || break; done; aws ec2 attach-volume --instance-id $(echo "$iid" | jq -r .instanceId) --volume-id $vid --device $devnode || continue; break; done
 while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != in-use ]]; do sleep 1; done
 while [[ ! -e $devnode ]]; do sleep 1; done
 mkfs.ext4 $devnode
