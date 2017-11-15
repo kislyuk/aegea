@@ -25,16 +25,40 @@ from .util.aws.spot import SpotFleetBuilder
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __name__]
 
 ebs_vol_mgr_shellcode = """iid=$(http http://169.254.169.254/latest/dynamic/instance-identity/document)
+
 aws configure set default.region $(echo "$iid" | jq -r .region)
+
 az=$(echo "$iid" | jq -r .availabilityZone)
+
 vid=$(aws ec2 create-volume --availability-zone $az --size %s --volume-type st1 | jq -r .VolumeId)
+
 aws ec2 create-tags --resource $vid --tags Key=aegea_batch_job,Value=$AWS_BATCH_JOB_ID
-trap "umount /mnt || umount -l /mnt; aws ec2 detach-volume --volume-id $vid; let delay=2; while $delay -lt 30 -a ! aws ec2 describe-volumes --volume-ids $vid | jq -re .Volumes[0].Attachments==[]; do sleep $delay; let delay=$delay*2; done; aws ec2 delete-volume --volume-id $vid" EXIT
+
+trap "umount /mnt || umount -l /mnt; aws ec2 detach-volume --volume-id $vid; let delay=2; while ! aws ec2 describe-volumes --volume-ids $vid | jq -re .Volumes[0].Attachments==[]; do if [[ $delay -gt 30 ]]; then aws ec2 detach-volume --force --volume-id $vid; break; fi; sleep $delay; let delay=$delay*2; done; aws ec2 delete-volume --volume-id $vid" EXIT
+
 while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != available ]]; do sleep 1; done
-for try in {1..9}; do if [[ $try == 9 ]]; then echo "Unable to mount $vid on $devnode"; exit 1; fi; for devnode in /dev/xvd{a..z}; do [[ -e $devnode ]] || break; done; aws ec2 attach-volume --instance-id $(echo "$iid" | jq -r .instanceId) --volume-id $vid --device $devnode || continue; break; done
-while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != in-use ]]; do sleep 1; done
+
+# let each process start trying from a different /dev/xvd{letter}
+let pid=$$
+
+# when N processes compete, for every success there can be N-1 failures; so the appropriate number of retries is O(N^2)
+# let us size this for 10 competitors
+# NOTE: the constants 9 and 10 in the $ind and $devnode calculation below are based on strlen("/dev/xvda")
+let delay=2+$pid%5
+for try in {1..100}; do if [[ $try == 100 ]]; then echo "Unable to mount $vid on $devnode"; exit 1; fi; if [[ $try -gt 1 ]]; then sleep $delay; fi; devices=$(echo /dev/xvd* /dev/xvd{a..z} /dev/xvd{a..z} | sed 's= =\n=g' | sort | uniq -c | sort -n | grep ' 2 ' | awk '{print $2}'); let devcnt=${#devices}/10+1; let ind=$pid%devcnt; devnode=${devices:10*$ind:9};  aws ec2 attach-volume --instance-id $(echo "$iid" | jq -r .instanceId) --volume-id $vid --device $devnode || continue; break; done
+
+# attach-volume is not instantaneous, and describe-volume requests are rate-limited
+let delay=5+pid%11
+sleep $delay
+
+let try=1
+let max_tries=32
+while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != in-use ]]; do if [[ $try == $max_tries ]]; break; fi; let foo=1+$try%5; let delay=2**$foo+pid%11; sleep $delay; done
+
 while [[ ! -e $devnode ]]; do sleep 1; done
+
 mkfs.ext4 $devnode
+
 mount $devnode %s""" # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
