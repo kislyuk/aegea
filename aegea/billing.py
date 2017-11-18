@@ -86,8 +86,11 @@ parser = register_parser(ls, parent=billing_parser, help="List contents of AWS c
 parser.add_argument("--columns", nargs="+")
 parser.add_argument("--year", type=int, help="Year to get billing reports for. Defaults to current year")
 parser.add_argument("--month", type=int, help="Month (numeral) to get billing reports for. Defaults to current month")
-parser.add_argument("--billing-reports-bucket", help="Name of S3 bucket to retrieve billing reports from",
-                    default=config.billing_configure.billing_reports_bucket)
+try:
+    parser.add_argument("--billing-reports-bucket", help="Name of S3 bucket to retrieve billing reports from",
+                        default=config.billing_configure.billing_reports_bucket)
+except:
+    print("Sorry, --billing-reports-bucket is broken.")
 parser.add_argument("--min-cost", type=float, help="Omit billing line items below this cost")
 parser.add_argument("--days", type=float, help="Only look at line items from this many past days")
 parser.add_argument("--by-user", action="store_true")
