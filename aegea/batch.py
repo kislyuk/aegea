@@ -27,11 +27,13 @@ bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done', __n
 ebs_vol_mgr_shellcode = """iid=$(http http://169.254.169.254/latest/dynamic/instance-identity/document)
 aws configure set default.region $(echo "$iid" | jq -r .region)
 az=$(echo "$iid" | jq -r .availabilityZone)
+apt-get update
+apt-get install -y psmisc lsof
 echo Creating volume >&2
 vid=$(aws ec2 create-volume --availability-zone $az --size %s --volume-type st1 | jq -r .VolumeId)
 aws ec2 create-tags --resource $vid --tags Key=aegea_batch_job,Value=$AWS_BATCH_JOB_ID
 echo Setting up SIGEXIT handler >&2
-trap "umount /mnt || umount -l /mnt; aws ec2 detach-volume --volume-id $vid; let delay=10; while ! aws ec2 describe-volumes --volume-ids $vid | jq -re .Volumes[0].Attachments==[]; do if [[ \$delay -gt 80 ]]; then aws ec2 detach-volume --force --volume-id $vid; sleep 120; break; fi; sleep \$delay; let delay=\$delay*2; done; aws ec2 delete-volume --volume-id $vid" EXIT
+trap "cd / ; fuser %s >&2 || echo Fuser exit code \$? >&2; lsof %s | grep -iv lsof | awk '{print \$2}' | grep -v PID | xargs kill -9 || echo LSOF exit code \$? >&2; sleep 3; umount %s || umount -l %s;  aws ec2 detach-volume --volume-id $vid; let try=1; sleep 10; while ! aws ec2 describe-volumes --volume-ids $vid | jq -re .Volumes[0].Attachments==[]; do if [[ \$try -gt 2 ]]; then echo Forcefully detaching volume $vid >&2; aws ec2 detach-volume --force --volume-id $vid; sleep 10; echo Deleting volume $vid >&2; aws ec2 delete-volume --volume-id $vid; exit; fi; sleep 10; let try=\$try+1; done; echo Deleting volume $vid >&2; aws ec2 delete-volume --volume-id $vid" EXIT
 echo Waiting for volume $vid to be created >&2
 while [[ $(aws ec2 describe-volumes --volume-ids $vid | jq -r .Volumes[0].State) != available ]]; do sleep 1; done
 # let each process start trying from a different /dev/xvd{letter}
@@ -186,7 +188,7 @@ def get_command_and_env(args):
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
         for mountpoint, size_gb in args.storage:
-            shellcode += (ebs_vol_mgr_shellcode % (size_gb, mountpoint)).splitlines()
+            shellcode += (ebs_vol_mgr_shellcode % (size_gb, mountpoint, mountpoint, mountpoint, mountpoint, mountpoint)).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
