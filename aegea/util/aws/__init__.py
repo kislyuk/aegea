@@ -168,7 +168,7 @@ class DNSZone(VerboseRepr):
                 if zone.get("Config", {}).get("PrivateZone") is True:
                     private_zones.append(zone)
             if len(private_zones) == 1:
-                self.zone = zone
+                self.zone = private_zones[0]
             elif len(private_zones) == 0 and create_default_private_zone:
                 vpc = ensure_vpc()
                 vpc.modify_attribute(EnableDnsSupport=dict(Value=True))
