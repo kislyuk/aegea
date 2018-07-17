@@ -32,7 +32,7 @@ aws configure set default.region $(echo "$iid" | jq -r .region)
 az=$(echo "$iid" | jq -r .availabilityZone)
 
 echo Creating volume >&2
-vid=$(aws ec2 create-volume --availability-zone $az --size %s --volume-type st1 | jq -r .VolumeId)
+vid=$(aws ec2 create-volume --availability-zone $az --size %s --volume-type %s | jq -r .VolumeId)
 aws ec2 create-tags --resource $vid --tags Key=aegea_batch_job,Value=$AWS_BATCH_JOB_ID
 
 echo Setting up SIGEXIT handler >&2
@@ -247,7 +247,10 @@ def get_command_and_env(args):
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
         for mountpoint, size_gb in args.storage:
-            shellcode += (ebs_vol_mgr_shellcode % tuple([size_gb] + [mountpoint] * 5)).splitlines()
+            volume_type = "st1"
+            if args.volume_type:
+                volume_type = args.volume_type
+            shellcode += (ebs_vol_mgr_shellcode % tuple([size_gb] + [volume_type] + [mountpoint] * 5)).splitlines()
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
@@ -405,6 +408,8 @@ group.add_argument("--ulimits", nargs="*",
 group.add_argument("--memory-mb", dest="memory", type=int, default=1024)
 group.add_argument("--privileged", action="store_true", default=False)
 group.add_argument("--volumes", nargs="+", metavar="HOST_PATH=GUEST_PATH", type=lambda x: x.split("=", 1), default=[])
+group.add_argument("--volume-type", choices={"standard", "io1", "gp2", "sc1", "st1"},
+                   help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD")
 group.add_argument("--environment", nargs="+", metavar="NAME=VALUE",
                    type=lambda x: dict(zip(["name", "value"], x.split("=", 1))), default=[])
 group.add_argument("--parameters", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])
