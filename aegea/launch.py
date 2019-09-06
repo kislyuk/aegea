@@ -172,7 +172,7 @@ def launch(args):
     logger.info("Launched %s in %s using %s", instance, subnet, args.ami)
     return dict(instance_id=instance.id)
 
-parser = register_parser(launch, help="Launch a new EC2 instance", description=__doc__)
+parser = register_parser(launch)
 parser.add_argument("hostname")
 parser.add_argument("--commands", nargs="+", metavar="COMMAND", help="Commands to run on host upon startup")
 parser.add_argument("--packages", nargs="+", metavar="PACKAGE", help="APT packages to install on host upon startup")

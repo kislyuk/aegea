@@ -127,6 +127,11 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
         _subparsers[parent.prog] = parent.add_subparsers()
     if "_" in parser_name and not USING_PYTHON2:
         add_parser_args["aliases"] = [parser_name]
+    if "description" not in add_parser_args:
+        func_module = sys.modules[function.__module__]
+        add_parser_args["description"] = add_parser_args.get("help", function.__doc__ or func_module.__doc__)
+    if add_parser_args["description"] and "help" not in add_parser_args:
+        add_parser_args["help"] = add_parser_args["description"].strip().splitlines()[0].rstrip(".")
     add_parser_args.setdefault("formatter_class", AegeaHelpFormatter)
     subparser = _subparsers[parent.prog].add_parser(parser_name.replace("_", "-"), **add_parser_args)
     if "_" in parser_name and USING_PYTHON2:
@@ -142,6 +147,4 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
     if parent and sys.version_info < (2, 7, 9):  # See https://bugs.python.org/issue9351
         parent._defaults.pop("entry_point", None)
     subparser.set_defaults(**get_config_for_prog(subparser.prog))
-    if subparser.description is None:
-        subparser.description = add_parser_args.get("help", function.__doc__)
     return subparser

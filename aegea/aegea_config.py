@@ -14,7 +14,7 @@ from .util.printing import page_output, format_table
 def configure(args):
     configure_parser.print_help()
 
-configure_parser = register_parser(configure, help=__doc__.strip(), description=__doc__)
+configure_parser = register_parser(configure)
 
 def ls(args):
     from . import config, tweak

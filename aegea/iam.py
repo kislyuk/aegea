@@ -17,7 +17,7 @@ from .util.aws import resources, clients, ensure_iam_group, IAMPolicyBuilder
 def iam(args):
     iam_parser.print_help()
 
-iam_parser = register_parser(iam, help=__doc__.strip())
+iam_parser = register_parser(iam)
 
 def configure(args):
     for group, policies in config.managed_iam_groups.items():

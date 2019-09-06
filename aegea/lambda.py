@@ -15,7 +15,7 @@ from .util.aws import resources, clients
 def _lambda(args):
     lambda_parser.print_help()
 
-lambda_parser = register_parser(_lambda, name="lambda", help=__doc__.strip())
+lambda_parser = register_parser(_lambda, name="lambda")
 
 def ls(args):
     paginator = getattr(clients, "lambda").get_paginator("list_functions")
