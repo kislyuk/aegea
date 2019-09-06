@@ -541,7 +541,7 @@ batch_queues:
 batch_create_compute_environment:
   type: MANAGED
   compute_type: SPOT
-  instance_types: [m3, c3, r3]
+  instance_types: [m5, c5, r5]
   min_vcpus: 0
   desired_vcpus: 2
   max_vcpus: 64
