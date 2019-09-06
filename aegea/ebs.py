@@ -6,15 +6,20 @@ To delete EBS volumes or snapshots, use ``aegea rm``.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, argparse, getpass
+import os, sys, argparse, getpass, re, subprocess, time, glob
 from datetime import datetime
 
-from . import register_parser
+from botocore.exceptions import ClientError
+
+from . import register_parser, logger
 from .ls import add_name, filter_collection, filter_and_tabulate, register_filtering_parser
 from .util import Timestamp, paginate
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags
+from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags, get_metadata
 from .util.compat import lru_cache
+
+def complete_volume_id(**kwargs):
+    return [i["VolumeId"] for i in clients.ec2.describe_volumes()["Volumes"]]
 
 def ebs(args):
     ebs_parser.print_help()
@@ -48,9 +53,15 @@ def create(args):
         if getattr(args, arg) is not None:
             create_args["".join(x.capitalize() for x in arg.split("_"))] = getattr(args, arg)
     if "AvailabilityZone" not in create_args:
-        create_args["AvailabilityZone"] = ensure_subnet(ensure_vpc()).availability_zone
+        if args.attach:
+            create_args["AvailabilityZone"] = get_metadata("placement/availability-zone")
+        else:
+            create_args["AvailabilityZone"] = ensure_subnet(ensure_vpc()).availability_zone
     res = clients.ec2.create_volume(**create_args)
-    clients.ec2.get_waiter('volume_available').wait(VolumeIds=[res["VolumeId"]])
+    clients.ec2.get_waiter("volume_available").wait(VolumeIds=[res["VolumeId"]])
+    if args.attach:
+        print(parser_attach.parse_args([res["VolumeId"]], namespace=args))
+        return attach(parser_attach.parse_args([res["VolumeId"]], namespace=args))
     return res
 
 parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS volume")
@@ -60,29 +71,116 @@ parser_create.add_argument("--availability-zone")
 parser_create.add_argument("--encrypted", action="store_true")
 parser_create.add_argument("--kms-key-id")
 parser_create.add_argument("--tags", nargs="+", default=[], metavar="TAG_NAME=VALUE")
+parser_create.add_argument("--attach", action="store_true",
+                           help="Attach volume to this instance (only valid when running on EC2)")
 
 def snapshot(args):
     return clients.ec2.create_snapshot(DryRun=args.dry_run, VolumeId=args.volume_id)
 parser_snapshot = register_parser(snapshot, parent=ebs_parser, help="Create an EBS snapshot")
+parser_snapshot.add_argument("volume_id").completer = complete_volume_id
+
+def attach_volume(args):
+    return clients.ec2.attach_volume(DryRun=args.dry_run,
+                                     VolumeId=args.volume_id,
+                                     InstanceId=args.instance,
+                                     Device=args.device)
+
+def find_volume_id(mountpoint):
+    with open("/proc/mounts") as fh:
+        for line in fh:
+            devnode, mount, _ = line.split(" ", 2)
+            if mountpoint == mount:
+                break
+        else:
+            raise Exception("Mountpoint {} not found in /proc/mounts".format(mountpoint))
+    for devnode_link in os.listdir("/dev/disk/by-id"):
+        if "Elastic_Block_Store" in devnode_link and os.path.realpath("/dev/disk/by-id/" + devnode_link) == devnode:
+            break
+    else:
+        raise Exception("EBS volume ID not found for mountpoint {} (devnode {})".format(mountpoint, devnode))
+    return re.search(r"Elastic_Block_Store_(vol[\w]+)", devnode_link).group(1).replace("vol", "vol-")
+
+def find_devnode(volume_id):
+    for devnode in os.listdir("/dev/disk/by-id"):
+        if "Elastic_Block_Store" in devnode and volume_id.replace("-", "") in devnode:
+            return "/dev/disk/by-id/" + devnode
+    else:
+        raise Exception("Could not find devnode for {}".format(volume_id))
 
 def attach(args):
-    res = clients.ec2.attach_volume(DryRun=args.dry_run,
-                                    VolumeId=args.volume_id,
-                                    InstanceId=args.instance,
-                                    Device=args.device)
-    clients.ec2.get_waiter('volume_in_use').wait(VolumeIds=[res["VolumeId"]])
+    if args.instance is None:
+        args.instance = get_metadata("instance-id")
+    devices = args.device if args.device else ["xvd" + chr(i + 1) for i in reversed(range(ord("a"), ord("z")))]
+    for i, device in enumerate(devices):
+        try:
+            args.device = devices[i]
+            res = attach_volume(args)
+            break
+        except ClientError as e:
+            if re.search("VolumeInUse.+already attached to an instance", str(e)):
+                if resources.ec2.Volume(args.volume_id).attachments[0]["InstanceId"] == args.instance:
+                    logger.warn("Volume %s is already attached to instance %s", args.volume_id, args.instance)
+                    break
+            if i + 1 < len(devices) and re.search("InvalidParameterValue.+Attachment point.+is already in use", str(e)):
+                logger.warn("BDM node %s is already in use, looking for next available node", devices[i])
+                continue
+            raise
+    res = clients.ec2.get_waiter("volume_in_use").wait(VolumeIds=[args.volume_id])
+    if args.format or args.mount:
+        for i in range(30):
+            try:
+                find_devnode(args.volume_id)
+                break
+            except Exception:
+                logger.debug("Waiting for device node to appear for %s", args.volume_id)
+                time.sleep(1)
+    if args.format:
+        logger.info("Formatting %s (%s)", args.volume_id, find_devnode(args.volume_id))
+        subprocess.check_call(args.format + " " + find_devnode(args.volume_id), shell=True)
+    if args.mount:
+        logger.info("Mounting %s at %s", args.volume_id, args.mount)
+        subprocess.check_call(["mount", find_devnode(args.volume_id), args.mount])
     return res
 parser_attach = register_parser(attach, parent=ebs_parser, help="Attach an EBS volume to an EC2 instance")
+parser_attach.add_argument("volume_id").completer = complete_volume_id
+parser_attach.add_argument("instance", type=resolve_instance_id, nargs="?")
+parser_attach.add_argument("--device", choices=["xvd" + chr(i + 1) for i in range(ord("a"), ord("z"))],
+                           help="Device node to attach volume to. Default: auto-select the first available node")
+for parser in parser_create, parser_attach:
+    parser.add_argument("--format", nargs="?", const="mkfs.xfs",
+                        help="Use this command and arguments to format volume after attaching (only valid on EC2)")
+    parser.add_argument("--mount", nargs="?", const="/mnt", help="Mount volume on given mountpoint (only valid on EC2)")
 
 def detach(args):
+    """
+    Detach an EBS volume from an EC2 instance.
+
+    If *volume_id* does not start with "vol-", it is interpreted as a mountpoint on the local instance,
+    mapped to its underlying EBS volume, unmounted and detached.
+    """
+    if args.volume_id.startswith("vol-"):
+        volume_id = args.volume_id
+    else:
+        volume_id = find_volume_id(mountpoint=args.volume_id)
+        args.unmount = True
+    if args.unmount:
+        subprocess.check_call(["umount", find_devnode(volume_id)])
+    attachment = resources.ec2.Volume(volume_id).attachments[0]
     res = clients.ec2.detach_volume(DryRun=args.dry_run,
-                                    VolumeId=args.volume_id,
-                                    InstanceId=args.instance,
-                                    Device=args.device,
+                                    VolumeId=volume_id,
+                                    InstanceId=attachment["InstanceId"],
+                                    Device=attachment["Device"],
                                     Force=args.force)
-    clients.ec2.get_waiter('volume_available').wait(VolumeIds=[res["VolumeId"]])
+    clients.ec2.get_waiter("volume_available").wait(VolumeIds=[volume_id])
+    if args.delete:
+        logger.info("Deleting EBS volume {}".format(volume_id))
+        clients.ec2.delete_volume(VolumeId=volume_id, DryRun=args.dry_run)
     return res
-parser_detach = register_parser(detach, parent=ebs_parser, help="Detach an EBS volume from an EC2 instance")
+parser_detach = register_parser(detach, parent=ebs_parser)
+parser_detach.add_argument("volume_id", help="EBS volume ID or mountpoint").completer = complete_volume_id
+parser_detach.add_argument("--unmount", action="store_true", help="Unmount the volume before detaching")
+parser_detach.add_argument("--delete", action="store_true", help="Delete the volume after detaching")
+parser_detach.add_argument("--force", action="store_true")
 
 def modify(args):
     modify_args = dict(VolumeId=args.volume_id, DryRun=args.dry_run)
@@ -99,6 +197,7 @@ def modify(args):
     #     waiter.wait(VolumeIds=[args.volume_id])
     return res
 parser_modify = register_parser(modify, parent=ebs_parser, help="Change the size, type, or IOPS of an EBS volume")
+parser_modify.add_argument("volume_id").completer = complete_volume_id
 
 for parser in parser_create, parser_modify:
     parser.add_argument("--size-gb", dest="size", type=int, help="Volume size in gigabytes")
@@ -106,14 +205,5 @@ for parser in parser_create, parser_modify:
                         help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD")
     parser.add_argument("--iops", type=int)
 
-def complete_volume_id(**kwargs):
-    return [i["VolumeId"] for i in clients.ec2.describe_volumes()["Volumes"]]
-
 for parser in parser_snapshot, parser_attach, parser_detach, parser_modify:
-    parser.add_argument("volume_id").completer = complete_volume_id
     parser.add_argument("--dry-run", action="store_true")
-    if parser in (parser_attach, parser_detach):
-        parser.add_argument("instance", type=resolve_instance_id)
-        parser.add_argument("device", choices=["xvd" + chr(i + 1) for i in range(ord("a"), ord("z"))])
-
-parser_detach.add_argument("--force", action="store_true")

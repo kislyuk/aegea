@@ -348,7 +348,9 @@ def get_bdm(max_devices=12, ebs_storage=frozenset()):
     return bdm
 
 def get_metadata(path):
-    return requests.get("http://169.254.169.254/latest/meta-data/{}".format(path)).content.decode()
+    res = requests.get("http://169.254.169.254/latest/meta-data/{}".format(path))
+    res.raise_for_status()
+    return res.content.decode()
 
 def expect_error_codes(exception, *codes):
     if exception.response["Error"]["Code"] not in codes:
