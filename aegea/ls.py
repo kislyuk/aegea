@@ -1,14 +1,12 @@
 # coding: utf-8
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, copy, time
-from datetime import datetime
+import os, sys, copy
 
 from . import register_parser
-from .util import Timestamp, paginate, describe_cidr, add_time_bound_args
+from .util import paginate, describe_cidr
 from .util.printing import page_output, tabulate, GREEN, BLUE
-from .util.aws import ARN, resolve_instance_id, resources, clients
-from .util.compat import timestamp
+from .util.aws import resolve_instance_id, resources, clients
 
 def column_completer(parser, **kwargs):
     resource = getattr(resources, parser.get_default("resource"))
@@ -118,96 +116,6 @@ def acls(args):
     page_output(filter_and_tabulate(resources.ec2.network_acls, args))
 
 parser = register_filtering_parser(acls, help="List EC2 network ACLs")
-
-def print_log_events(args):
-    streams = []
-    if args.log_stream:
-        describe_log_streams_args = dict(logGroupName=args.log_group, logStreamNamePrefix=args.log_stream)
-    else:
-        describe_log_streams_args = dict(logGroupName=args.log_group, orderBy="LastEventTime", descending=True)
-    for stream in paginate(clients.logs.get_paginator("describe_log_streams"), **describe_log_streams_args):
-        stream_name = stream["arn"].split(":")[-1]
-        first_event_ts = datetime.utcfromtimestamp(stream.get("firstEventTimestamp", 0) // 1000)
-        last_event_ts = datetime.utcfromtimestamp(stream.get("lastEventTimestamp", 0) // 1000)
-        if args.end_time and first_event_ts > args.end_time:
-            continue
-        if args.start_time and last_event_ts < args.start_time:
-            break
-        streams.append(stream_name)
-    for stream in streams:
-        get_log_events_args = dict(logGroupName=args.log_group, startFromHead=True, limit=100)
-        if args.start_time:
-            get_log_events_args.update(startTime=int(timestamp(args.start_time) * 1000))
-        if args.end_time:
-            get_log_events_args.update(endTime=int(timestamp(args.end_time) * 1000))
-        while True:
-            page = clients.logs.get_log_events(logStreamName=stream, **get_log_events_args)
-            for event in page["events"]:
-                if "timestamp" not in event or "message" not in event:
-                    continue
-                print(str(Timestamp(event["timestamp"])), event["message"])
-            if len(page["events"]) == 0 or "nextForwardToken" not in page:
-                break
-            get_log_events_args.update(nextToken=page["nextForwardToken"], limit=10000)
-
-def logs(args):
-    if args.log_group and (args.log_stream or args.start_time or args.end_time):
-        return print_log_events(args)
-    table = []
-    group_cols = ["logGroupName"]
-    stream_cols = ["logStreamName", "lastIngestionTime", "storedBytes"]
-    args.columns = group_cols + stream_cols
-    for group in paginate(clients.logs.get_paginator("describe_log_groups")):
-        if args.log_group and group["logGroupName"] != args.log_group:
-            continue
-        n = 0
-        for stream in paginate(clients.logs.get_paginator("describe_log_streams"),
-                               logGroupName=group["logGroupName"], orderBy="LastEventTime", descending=True):
-            now = datetime.utcnow().replace(microsecond=0)
-            stream["lastIngestionTime"] = now - datetime.utcfromtimestamp(stream.get("lastIngestionTime", 0) // 1000)
-            table.append(dict(group, **stream))
-            n += 1
-            if n >= args.max_streams_per_group:
-                break
-    page_output(tabulate(table, args))
-
-parser = register_parser(logs, help="List CloudWatch Logs groups and streams")
-parser.add_argument("--max-streams-per-group", "-n", type=int, default=8)
-parser.add_argument("--sort-by", default="lastIngestionTime:reverse")
-parser.add_argument("log_group", nargs="?", help="CloudWatch log group")
-parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
-add_time_bound_args(parser)
-
-def grep(args):
-    filter_args = dict(logGroupName=args.log_group)
-    if args.log_stream:
-        filter_args.update(logStreamNames=[args.log_stream])
-    if args.pattern:
-        filter_args.update(filterPattern=args.pattern)
-    if args.start_time:
-        filter_args.update(startTime=int(timestamp(args.start_time) * 1000))
-    if args.end_time:
-        filter_args.update(endTime=int(timestamp(args.end_time) * 1000))
-    num_results = 0
-    while True:
-        for event in paginate(clients.logs.get_paginator("filter_log_events"), **filter_args):
-            if "timestamp" not in event or "message" not in event:
-                continue
-            print(str(Timestamp(event["timestamp"])), event["message"])
-            num_results += 1
-        if args.follow:
-            time.sleep(1)
-        else:
-            return SystemExit(os.EX_OK if num_results > 0 else os.EX_DATAERR)
-
-grep_parser = register_parser(grep, help="Filter and print events in a CloudWatch Logs stream or group of streams")
-grep_parser.add_argument("pattern", help="""CloudWatch filter pattern to use. Case-sensitive. See
-http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html""")
-grep_parser.add_argument("log_group", help="CloudWatch log group")
-grep_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
-grep_parser.add_argument("--follow", "-f", help="Repeat search continuously instead of running once",
-                         action="store_true")
-add_time_bound_args(grep_parser)
 
 def clusters(args):
     cluster_arns = sum([p["clusterArns"] for p in clients.ecs.get_paginator("list_clusters").paginate()], [])

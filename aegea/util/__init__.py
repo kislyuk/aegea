@@ -1,11 +1,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, re, socket, time, io, gzip
+import os, sys, re, socket, time, io, gzip, logging
+from functools import partial
 from datetime import datetime
 from dateutil.parser import parse as dateutil_parse
 from dateutil.relativedelta import relativedelta
+
 from .printing import GREEN
 from .compat import Repr, str
+
+logger = logging.getLogger(__name__)
 
 def wait_for_port(host, port, timeout=600, print_progress=True):
     if print_progress:
@@ -59,24 +63,39 @@ class Timestamp(datetime):
     h, d, w) are supported. Negative inputs (e.g. -5m) are interpreted as relative to the current date. Other inputs
     (e.g. 2020-01-01, 15:20) are parsed using the dateutil parser.
     """
-    def __new__(cls, t):
+    _precision = {}
+
+    def __new__(cls, t, snap=0):
         if isinstance(t, (str, bytes)) and t.isdigit():
             t = int(t)
         if not isinstance(t, (str, bytes)):
             from dateutil.tz import tzutc
             return datetime.fromtimestamp(t // 1000, tz=tzutc())
         try:
-            units = {"weeks", "days", "hours", "minutes", "seconds"}
+            units = ["weeks", "days", "hours", "minutes", "seconds"]
             diffs = {u: float(t[:-1]) for u in units if u.startswith(t[-1])}
             if len(diffs) == 1:
-                return datetime.now().replace(microsecond=0) + relativedelta(**diffs)
+                # Snap > 0 governs the rounding of units (hours, minutes and seconds) to 0 to improve cache performance
+                snap_units = {u.rstrip("s"): 0 for u in units[units.index(list(diffs)[0]) + snap:]} if snap else {}
+                snap_units.pop("day", None)
+                snap_units.update(microsecond=0)
+                ts = datetime.now().replace(**snap_units) + relativedelta(**diffs)
+                cls._precision[ts] = snap_units
+                return ts
             return dateutil_parse(t)
         except (ValueError, OverflowError, AssertionError):
             raise ValueError('Could not parse "{}" as a timestamp or time delta'.format(t))
 
-def add_time_bound_args(p):
-    p.add_argument("--start-time", type=Timestamp, default=Timestamp("-7d"), help=Timestamp.__doc__, metavar="START")
-    p.add_argument("--end-time", type=Timestamp, help=Timestamp.__doc__, metavar="END")
+    @classmethod
+    def match_precision(cls, timestamp, precision_source):
+        if precision_source in cls._precision:
+            logger.debug("Discarding timestamp %s %s precision", timestamp, ", ".join(cls._precision[precision_source]))
+        return timestamp.replace(**cls._precision.get(precision_source, dict(microsecond=0)))
+
+def add_time_bound_args(p, snap=0):
+    t = partial(Timestamp, snap=snap)
+    p.add_argument("--start-time", type=t, default=Timestamp("-7d", snap=snap), help=Timestamp.__doc__, metavar="START")
+    p.add_argument("--end-time", type=t, help=Timestamp.__doc__, metavar="END")
 
 class hashabledict(dict):
     def __hash__(self):

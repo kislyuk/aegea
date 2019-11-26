@@ -3,7 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, sys, argparse
 from botocore.exceptions import ClientError
 
-from .ls import register_parser, register_listing_parser, grep, add_time_bound_args
+from .ls import register_parser, register_listing_parser
+from .logs import grep, add_time_bound_args
 from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
 from .util.aws import ARN, resources, clients, ensure_iam_role, ensure_vpc, expect_error_codes

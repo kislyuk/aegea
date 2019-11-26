@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, io, gzip, time, socket, hashlib
+import os, sys, json, io, gzip, time, socket, hashlib, uuid
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
@@ -145,7 +145,29 @@ def ensure_security_group(name, vpc, tcp_ingress=[dict(port=socket.getservbyname
                             CidrIp=rule.get("cidr"), SourceSecurityGroupId=source_security_group_id)
     return security_group
 
-def ensure_s3_bucket(name=None, policy=None):
+class S3BucketLifecycleBuilder:
+    def __init__(self, **kwargs):
+        self.rules = []
+        self.add_rule(abort_incomplete_multipart_upload=30)
+        if kwargs:
+            self.add_rule(**kwargs)
+
+    def add_rule(self, prefix="", tags=None, expiration=None, transitions=None, abort_incomplete_multipart_upload=None):
+        rule = dict(ID=__name__ + "." + str(uuid.uuid4()), Status="Enabled", Filter=dict(Prefix=prefix))
+        if tags:
+            rule.update(Filter=dict(And=dict(Prefix=prefix, Tags=[dict(Key=k, Value=v) for k, v in tags.items()])))
+        if expiration:
+            rule.update(Expiration=expiration)
+        if transitions:
+            rule.update(Transitions=transitions)
+        if abort_incomplete_multipart_upload:
+            rule.update(AbortIncompleteMultipartUpload=dict(DaysAfterInitiation=abort_incomplete_multipart_upload))
+        self.rules.append(rule)
+
+    def __iter__(self):
+        yield ("Rules", self.rules)
+
+def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
     if name is None:
         name = "aegea-assets-{}".format(ARN.get_account_id())
     bucket = resources.s3.Bucket(name)
@@ -157,6 +179,8 @@ def ensure_s3_bucket(name=None, policy=None):
     bucket.wait_until_exists()
     if policy:
         bucket.Policy().put(Policy=str(policy))
+    if lifecycle:
+        bucket.LifecycleConfiguration().put(LifecycleConfiguration=dict(lifecycle))
     return bucket
 
 class ARN:
