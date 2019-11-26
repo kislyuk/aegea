@@ -81,7 +81,7 @@ class TestAegea(unittest.TestCase):
                 args += ["users"]
             elif subcommand in ("start", "stop", "reboot", "terminate", "rename"):
                 args += [instance_id, instance_id, "--dry-run"]
-            elif subcommand == "grep":
+            elif subcommand in ("grep", "filter"):
                 args += ["--help"] if USING_PYTHON2 else ["error", "syslog", "--start-time=-2h", "--end-time=-5m"]
                 expect.append(dict(return_codes=[os.EX_DATAERR]))
             elif subcommand in ("launch", "build-ami"):
