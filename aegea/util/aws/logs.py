@@ -47,10 +47,11 @@ def export_log_files(args):
     if not args.end_time:
         args.end_time = Timestamp.match_precision(Timestamp("-0s"), args.start_time)
     export_task_args = dict(logGroupName=args.log_group,
-                            logStreamNamePrefix=args.log_stream,
                             fromTime=int(timestamp(args.start_time) * 1000),
                             to=int(timestamp(args.end_time) * 1000),
                             destination=bucket.name)
+    if args.log_stream:
+        export_task_args.update(logStreamNamePrefix=args.log_stream)
     cache_key = hashlib.sha256(json.dumps(export_task_args, sort_keys=True).encode()).hexdigest()[:32]
     export_task_args.update(destinationPrefix=cache_key)
     for log_object in bucket.objects.filter(Prefix=cache_key):
@@ -59,16 +60,22 @@ def export_log_files(args):
     else:
         logger.debug("Starting new log export task %s", export_task_args)
         task_desc = clients.logs.create_export_task(**export_task_args)
-        print(task_desc)
-        while task_desc.get("status", {}).get("code") != "COMPLETED":
-            res = clients.logs.describe_export_tasks(taskId=task_desc["taskId"])
-            assert len(res["exportTasks"]) == 1
-            task_desc = res["exportTasks"][0]
-            if task_desc["status"]["code"] in {"CANCELLED", "FAILED"}:
-                raise Exception("Log export task failed: " + task_desc["status"]["message"])
-            msg = "log export task: {logGroupName} {from}..{to} -> s3://{destination}/{destinationPrefix} %s"
-            logger.info(msg.format(**task_desc), task_desc["status"]["code"])
-            time.sleep(1)
+        try:
+            while task_desc.get("status", {}).get("code") != "COMPLETED":
+                res = clients.logs.describe_export_tasks(taskId=task_desc["taskId"])
+                assert len(res["exportTasks"]) == 1
+                task_desc = res["exportTasks"][0]
+                if task_desc["status"]["code"] in {"CANCELLED", "FAILED"}:
+                    raise Exception("Log export task failed: " + task_desc["status"]["message"])
+                msg = "log export task: {logGroupName} {from}..{to} -> s3://{destination}/{destinationPrefix} %s"
+                logger.info(msg.format(**task_desc), task_desc["status"]["code"])
+                time.sleep(1)
+        finally:
+            try:
+                clients.logs.cancel_export_task(taskId=task_desc["taskId"])
+                # TODO: if cancel successful, clean up s3 prefix
+            except Exception:
+                pass
     return bucket.objects.filter(Prefix=cache_key)
 
 def get_lines_for_log_file(log_file):
@@ -84,9 +91,13 @@ def get_lines_for_log_file(log_file):
 def export_and_print_log_events(args):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for lines in executor.map(get_lines_for_log_file, export_log_files(args)):
-            print(len(lines))
             for line in lines:
                 sys.stdout.write(line)
+
+def print_log_event(event):
+    if "@timestamp" in event:
+        event["timestamp"], event["message"] = event["@timestamp"], event["@message"]
+    print(str(Timestamp(event["timestamp"])), event["message"])
 
 def print_log_events(args):
     streams = []
@@ -114,7 +125,7 @@ def print_log_events(args):
             for event in page["events"]:
                 if "timestamp" not in event or "message" not in event:
                     continue
-                print(str(Timestamp(event["timestamp"])), event["message"])
+                print_log_event(event)
             if len(page["events"]) == 0 or "nextForwardToken" not in page:
                 break
             get_log_events_args.update(nextToken=page["nextForwardToken"], limit=10000)
