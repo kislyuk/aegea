@@ -112,7 +112,7 @@ def get_command_and_env(args):
         shellcode += ['BATCH_SCRIPT=$(mktemp --tmpdir "{tmpdir_fmt}")'.format(tmpdir_fmt=tmpdir_fmt),
                       "apt-get update -qq",
                       "apt-get install -qqy --no-install-suggests --no-install-recommends curl ca-certificates gnupg",
-                      "curl '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
+                      "curl -L '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
                       "chmod +x $BATCH_SCRIPT",
                       "$BATCH_SCRIPT"]
     elif args.cwl:
