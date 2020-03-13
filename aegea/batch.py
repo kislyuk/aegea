@@ -189,6 +189,7 @@ def submit(args):
                        parameters={k: v for k, v in args.parameters},
                        containerOverrides=container_overrides)
     if args.dry_run:
+        print("The following command would be run: {0}".format(submit_args))
         return {"Dry run succeeded": True}
     try:
         job = clients.batch.submit_job(**submit_args)
