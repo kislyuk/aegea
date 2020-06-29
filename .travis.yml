@@ -1,5 +1,7 @@
 language: python
-sudo: required
+environment:
+  COVERAGE_PROCESS_START: 1
+
 dist: bionic
 python:
   - 3.5
@@ -8,6 +10,8 @@ python:
   - 3.8
 
 before_install:
+  - python -c'import sys; print(sys.path)'
+  - exit 1
   - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
