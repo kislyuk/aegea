@@ -33,6 +33,6 @@ jobs:
         echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
         echo 'import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
     - name: Test
-      run: make test
+      run: make test && ls -la && find .
     - name: Upload coverage data
       run: bash <(curl -s https://codecov.io/bash)
