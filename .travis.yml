@@ -10,9 +10,9 @@ python:
   - 3.8
 
 before_install:
-  - echo 'import coverage; coverage.process_startup()' > sitecustomize.py
-  - echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
-  - echo 'import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
+  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > sitecustomize.py
+  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > test/sitecustomize.py
+  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
   - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
