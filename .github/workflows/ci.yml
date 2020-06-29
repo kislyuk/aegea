@@ -9,7 +9,6 @@ env:
   AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
   AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-  COVERAGE_PROCESS_START: .coveragerc
 
 jobs:
   CI:
@@ -28,7 +27,8 @@ jobs:
       run: |
         pip install --quiet coverage flake8 wheel pandoc httpie
         make install
-        touch .coveragerc
+        touch $(pwd).coveragerc
+        export COVERAGE_PROCESS_START=$(pwd).coveragerc
         echo 'import coverage; coverage.process_startup()' > sitecustomize.py
         echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
         echo 'import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
