@@ -11,6 +11,7 @@ python:
 
 before_install:
   - echo 'import coverage; coverage.process_startup()' > sitecustomize.py
+  - echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
   - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
