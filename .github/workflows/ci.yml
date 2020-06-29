@@ -1,4 +1,4 @@
-name: CI
+name: Tests
 
 on: [push]
 
@@ -12,7 +12,7 @@ env:
   COVERAGE_PROCESS_START: .coveragerc
 
 jobs:
-  build:
+  CI:
     runs-on: ubuntu-20.04
     strategy:
       max-parallel: 8
@@ -33,5 +33,6 @@ jobs:
         echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
         echo 'import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
     - name: Test
-      run: |
-        make test
+      run: make test
+    - name: Upload coverage data
+      run: bash <(curl -s https://codecov.io/bash)
