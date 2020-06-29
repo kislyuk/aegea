@@ -1,8 +1,9 @@
 language: python
-environment:
-  COVERAGE_PROCESS_START: 1
-
 dist: bionic
+
+env:
+  COVERAGE_PROCESS_START: .coveragerc
+
 python:
   - 3.5
   - 3.6
@@ -10,9 +11,10 @@ python:
   - 3.8
 
 before_install:
-  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > sitecustomize.py
-  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > test/sitecustomize.py
-  - echo 'print("COVER HOOK"); import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
+  - touch .coveragerc
+  - echo 'import coverage; coverage.process_startup()' > sitecustomize.py
+  - echo 'import coverage; coverage.process_startup()' > test/sitecustomize.py
+  - echo 'import coverage; coverage.process_startup()' > $(python -c'import sys; print(sys.path[-1])')/sitecustomize.py
   - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
