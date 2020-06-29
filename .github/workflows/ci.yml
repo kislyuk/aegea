@@ -35,4 +35,6 @@ jobs:
     - name: Test
       run: make test && ls -la && find .
     - name: Upload coverage data
-      run: bash <(curl -s https://codecov.io/bash)
+      run: |
+        coverage combine
+        bash <(curl -s https://codecov.io/bash)
