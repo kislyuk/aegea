@@ -10,8 +10,7 @@ python:
   - 3.8
 
 before_install:
-  - python -c'import sys; print(sys.path)'
-  - exit 1
+  - echo 'import coverage; coverage.process_startup()' > sitecustomize.py
   - pip install --quiet coverage flake8 wheel pandoc httpie
 
 install:
