@@ -27,7 +27,7 @@ jobs:
       run: |
         pip install --quiet coverage flake8 wheel pandoc httpie
         make install
-        echo 'import sys; print("COV 1A", file=sys.stderr); import coverage; coverage.process_startup()' > sitecustomize.py
+        echo 'import coverage; coverage.process_startup()' > sitecustomize.py
     - name: Test
       run: |
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
