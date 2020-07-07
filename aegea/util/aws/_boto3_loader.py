@@ -1,6 +1,8 @@
+from typing import Dict, Any
+
 class Loader:
-    cache = dict(resource={}, client={})
-    client_kwargs = dict(default={})
+    cache = dict(resource={}, client={})  # type: Dict[str, Any]
+    client_kwargs = dict(default={})  # type: Dict[str, Dict]
 
     def __init__(self, factory):
         self.factory = factory

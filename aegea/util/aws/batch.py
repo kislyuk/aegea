@@ -196,7 +196,7 @@ def ensure_lambda_helper():
         logger.info("Using Batch helper Lambda %s", helper_desc["Configuration"]["FunctionArn"])
     except awslambda.exceptions.ResourceNotFoundException:
         logger.info("Batch helper Lambda not found, installing")
-        import chalice.cli
+        import chalice.cli  # type: ignore
         orig_argv = sys.argv
         orig_wd = os.getcwd()
         try:

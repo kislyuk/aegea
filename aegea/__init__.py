@@ -18,7 +18,7 @@ from .version import __version__
 logger = logging.getLogger(__name__)
 
 config, parser = None, None
-_subparsers, _hidden_subparsers = {}, {}
+_subparsers = {}
 
 class AegeaConfig(tweak.Config):
     base_config_file = os.path.join(os.path.dirname(__file__), "base_config.yml")

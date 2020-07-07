@@ -57,5 +57,5 @@ parser.add_argument("--terms", nargs="+", default=["OnDemand"])
 parser.add_argument("--sort-by")
 parser.add_argument("--spot", action="store_true", help="Display AWS EC2 Spot Instance pricing history")
 parser.add_argument("--spot-start-time", type=Timestamp, default=Timestamp("-1h"), metavar="START",
-                    help="Time to start spot price history." + Timestamp.__doc__)
+                    help="Time to start spot price history." + Timestamp.__doc__)  # type: ignore
 parser.add_argument("--columns-spot")

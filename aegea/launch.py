@@ -222,7 +222,7 @@ parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
 parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
                     help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
-parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)
+parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)  # type: ignore
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
 parser.add_argument("--ubuntu-linux-ami", action="store_true", help="Use the most recent Ubuntu Linux LTS AMI")
 parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux 2 AMI")

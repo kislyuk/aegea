@@ -52,9 +52,9 @@ def cost(args):
 
 parser_cost = register_parser(cost, help="List AWS costs")
 parser_cost.add_argument("--time-period-start", type=Timestamp, default=Timestamp("-7d"),
-                         help="Time to start cost history." + Timestamp.__doc__)
+                         help="Time to start cost history." + Timestamp.__doc__)  # type: ignore
 parser_cost.add_argument("--time-period-end", type=Timestamp, default=Timestamp("-0d"),
-                         help="Time to end cost history." + Timestamp.__doc__)
+                         help="Time to end cost history." + Timestamp.__doc__)  # type: ignore
 parser_cost.add_argument("--granularity", choices={"HOURLY", "DAILY", "MONTHLY"}, help="AWS cost granularity")
 parser_cost.add_argument("--metrics", nargs="+", default=["AmortizedCost"],
                          choices={"AmortizedCost", "BlendedCost", "NetAmortizedCost", "NetUnblendedCost",
@@ -79,9 +79,9 @@ def cost_forecast(args):
 
 parser_cost_forecast = register_parser(cost_forecast, help="List AWS cost forecasts")
 parser_cost_forecast.add_argument("--time-period-start", type=Timestamp, default=Timestamp("1d"),
-                                  help="Time to start cost forecast." + Timestamp.__doc__)
+                                  help="Time to start cost forecast." + Timestamp.__doc__)  # type: ignore
 parser_cost_forecast.add_argument("--time-period-end", type=Timestamp, default=Timestamp("7d"),
-                                  help="Time to end cost forecast." + Timestamp.__doc__)
+                                  help="Time to end cost forecast." + Timestamp.__doc__)  # type: ignore
 parser_cost_forecast.add_argument("--granularity", choices={"HOURLY", "DAILY", "MONTHLY"},
                                   help="Up to 3 months of DAILY forecasts or 12 months of MONTHLY forecasts")
 parser_cost_forecast.add_argument("--metric", help="Which metric Cost Explorer uses to create your forecast",

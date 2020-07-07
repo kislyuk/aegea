@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, json
+from typing import Dict, Any
 
 _constants_filename = os.path.join(os.path.dirname(__file__), "..", "constants.json")
-_constants = {}
+_constants = {}  # type: Dict[str, Any]
 
 def write():
     from . import aws

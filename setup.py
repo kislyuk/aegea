@@ -42,7 +42,8 @@ setuptools.setup(
     },
     tests_require=[
         "coverage",
-        "flake8"
+        "flake8",
+        "mypy"
     ],
     packages=setuptools.find_packages(exclude=["test"]),
     scripts=glob.glob("scripts/*"),

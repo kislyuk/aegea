@@ -18,6 +18,7 @@ test_deps:
 lint: test_deps
 	./setup.py flake8
 	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python' aegea/missions aegea/rootfs.skel scripts)
+	mypy $$(python setup.py --name)
 
 test: test_deps lint
 	coverage run --source=$$(python setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose

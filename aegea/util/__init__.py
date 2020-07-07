@@ -5,6 +5,7 @@ from functools import partial
 from datetime import datetime
 from dateutil.parser import parse as dateutil_parse
 from dateutil.relativedelta import relativedelta
+from typing import Dict, Any
 
 from .printing import GREEN
 from .compat import Repr, str, cpu_count
@@ -63,7 +64,7 @@ class Timestamp(datetime):
     h, d, w) are supported. Negative inputs (e.g. -5m) are interpreted as relative to the current date. Other inputs
     (e.g. 2020-01-01, 15:20) are parsed using the dateutil parser.
     """
-    _precision = {}
+    _precision = {}  # type: Dict[Any, Any]
 
     def __new__(cls, t, snap=0):
         if isinstance(t, (str, bytes)) and t.isdigit():
