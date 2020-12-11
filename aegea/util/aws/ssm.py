@@ -4,13 +4,6 @@ import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile, time
 
 import boto3
 
-using_distro = False
-try:
-    import distro
-    using_distro = True
-except ImportError:
-    pass
-
 from ... import logger, config
 from .. import Timestamp
 from ..exceptions import AegeaException
@@ -51,9 +44,7 @@ def ensure_session_manager_plugin():
         target_path = os.path.join(session_manager_dir, "session-manager-plugin")
         if platform.system() == "Darwin":
             download_session_manager_plugin_macos(target_path=target_path)
-        elif using_distro and distro.id() == "ubuntu":
-            download_session_manager_plugin_linux(target_path=target_path)
-        elif not using_distro and platform.linux_distribution()[0] == "Ubuntu":  # type: ignore
+        elif "Ubuntu" in subprocess.run(["uname", "-a"], capture_output=True).stdout.decode():  # type: ignore
             download_session_manager_plugin_linux(target_path=target_path)
         else:
             download_session_manager_plugin_linux(target_path=target_path, pkg_format="rpm")
