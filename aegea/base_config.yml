@@ -47,6 +47,7 @@ build_image:
     - python3-yaml
     - nfs-common
     - unzip
+    - zstd
     - build-essential
     - cmake
     - libtool
