@@ -1,3 +1,10 @@
+Changes for v3.6.48 (2021-02-25)
+================================
+
+-  aegea sfn ls: add status filter
+
+-  Add zstd to base config
+
 Changes for v3.6.47 (2020-12-24)
 ================================
 
