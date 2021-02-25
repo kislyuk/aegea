@@ -16,6 +16,9 @@ from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
 from .util.aws import clients, ARN
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 
+sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
+                         FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
+
 def complete_state_machine_name(**kwargs):
     return [c["name"] for c in paginate(clients.stepfunctions.get_paginator("list_state_machines"))]
 
@@ -38,7 +41,10 @@ def ls(args):
 
     def list_executions(state_machine):
         list_executions_paginator = clients.stepfunctions.get_paginator("list_executions")
-        return list(paginate(list_executions_paginator, stateMachineArn=state_machine["stateMachineArn"]))
+        list_executions_args = dict(stateMachineArn=state_machine["stateMachineArn"])
+        if args.status:
+            list_executions_args.update(statusFilter=args.status)
+        return list(paginate(list_executions_paginator, **list_executions_args))
 
     with ThreadPoolExecutor() as executor:
         executions = sum(executor.map(list_executions, state_machines), [])  # type: ignore
@@ -47,6 +53,7 @@ def ls(args):
 
 ls_parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for state machines in this account")
 ls_parser.add_argument("--state-machine").completer = complete_state_machine_name
+ls_parser.add_argument("--status", choices=list(sfn_status_colors))
 
 def describe(args):
     if ARN(args.resource_arn).resource.startswith("execution"):
@@ -60,9 +67,6 @@ def describe(args):
 
 describe_parser = register_parser(describe, parent=sfn_parser, help="Describe a state machine or execution")
 describe_parser.add_argument("resource_arn")
-
-sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
-                         FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
 
 def watch(args, print_event_fn=batch.print_event):
     seen_events = set()  # type: Set[str]
