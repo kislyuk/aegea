@@ -1,3 +1,8 @@
+Changes for v3.6.50 (2021-02-25)
+================================
+
+-  Replace deprecated btrfs-tools with btrfs-progs
+
 Changes for v3.6.49 (2021-02-25)
 ================================
 
