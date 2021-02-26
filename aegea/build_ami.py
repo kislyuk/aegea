@@ -73,7 +73,7 @@ parser.add_argument("--snapshot-existing-host", type=str, metavar="HOST")
 parser.add_argument("--wait-for-ami", action="store_true")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
-parser.add_argument("--instance-type", default="c4.xlarge", help="Instance type to use for building the AMI")
+parser.add_argument("--instance-type", default="c5.xlarge", help="Instance type to use for building the AMI")
 parser.add_argument("--security-groups", nargs="+")
 parser.add_argument("--base-ami")
 parser.add_argument("--base-ami-product",

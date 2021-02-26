@@ -176,7 +176,7 @@ def submit(args):
         args.staging_s3_bucket = "aegea-batch-jobs-" + ARN.get_account_id()
     if args.job_definition_arn is None:
         if not any([args.command, args.execute, args.wdl]):
-            raise AegeaException("One of the arguments --command --execute --wdl is required")
+            raise AegeaException("One of the arguments --command, --execute, --wdl, --job-definition-arn is required")
     elif args.name is None:
         args.name = os.path.basename(args.job_definition_arn).replace(":", "_")
 
