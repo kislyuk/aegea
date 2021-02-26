@@ -1,3 +1,8 @@
+Changes for v3.6.49 (2021-02-25)
+================================
+
+-  Use c5.xlarge to build AMIs; clarify Batch error message
+
 Changes for v3.6.48 (2021-02-25)
 ================================
 
