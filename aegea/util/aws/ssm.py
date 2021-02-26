@@ -76,7 +76,8 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
             statuses = []
             for invocation in paginate(clients.ssm.get_paginator("list_command_invocations"), CommandId=command_id):
                 if invocation["Status"] in {"TimedOut", "Cancelled", "Failed"}:
-                    logger.error("SSM command failed: {}".format(invocation["StatusDetails"]))
+                    if invocation["Status"] in {"TimedOut", "Cancelled"}:
+                        logger.error("SSM command failed: {}".format(invocation["StatusDetails"]))
                     raise AegeaException("SSM command failed: {}".format(invocation))
                 statuses.append(invocation["Status"])
                 if invocation["Status"] not in {"InProgress", "Success"}:

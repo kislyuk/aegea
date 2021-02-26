@@ -28,7 +28,7 @@ def build_ami(args):
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
     ci_timeout = args.cloud_init_timeout
     if ci_timeout <= 0:
-        ci_timeout = 3660 * 24
+        ci_timeout = 3600
     sys.stderr.write("Waiting {} seconds for cloud-init ...".format(ci_timeout))
     sys.stderr.flush()
     for i in range(ci_timeout):
@@ -59,7 +59,7 @@ def build_ami(args):
                 Base=base_ami.id, BaseName=base_ami.name, BaseDescription=base_ami.description or "")
     add_tags(image, **tags)
     logger.info("Waiting for %s to become available...", image.id)
-    clients.ec2.get_waiter("image_available").wait(ImageIds=[image.id])
+    clients.ec2.get_waiter("image_available").wait(ImageIds=[image.id], WaiterConfig=dict(Delay=10, MaxAttempts=120))
     while resources.ec2.Image(image.id).state != "available":
         sys.stderr.write(".")
         sys.stderr.flush()
