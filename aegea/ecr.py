@@ -33,6 +33,7 @@ def ls(args):
             table.append(dict(image, **repo))
         if len(table) == orig_len:
             table.append(repo)
+    table = sorted(table, key=lambda r: r["repositoryName"] + str(r.get("imagePushedAt")))
     page_output(tabulate(table, args))
 
 ls_parser = register_listing_parser(ls, parent=ecr_parser, help="List ECR repos and images")
