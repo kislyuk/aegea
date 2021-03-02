@@ -1,3 +1,10 @@
+Changes for v3.6.51 (2021-03-02)
+================================
+
+-  Sort ECR images by date
+
+-  build-ami: adjust timeouts and error message
+
 Changes for v3.6.50 (2021-02-25)
 ================================
 
