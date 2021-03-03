@@ -84,7 +84,7 @@ containers, managing AWS ECS, Fargate, and EC2/Spot in your account on your beha
 commands to interact with AWS Batch. The key command is ``aegea batch submit`` to submit jobs.
 
 Run ``aegea batch submit --command "echo 'hello world'" --memory 4096 --vcpus 2 --watch``
-to run a Batch job that requires 2 GB RAM and 4 cores to be allocated to the Docker container,
+to run a Batch job that requires 4 GB RAM and 2 cores to be allocated to the Docker container,
 and executes the specified command.
 
 You can also use ``aegea batch submit --execute FILE``. This will slurp up FILE (any type of shell script or ELF
