@@ -229,16 +229,10 @@ class ARN:
             try:
                 user = resources.iam.CurrentUser().user
                 cls._default_iam_username = getattr(user, "name", ARN(user.arn).resource.split("/")[-1])
-            except Exception as e:
+            except Exception:
                 try:
-                    if "Must specify userName" in str(e) or ("assumed-role" in str(e) and "botocore-session" in str(e)):
-                        cur_session = boto3.Session()._session
-                        src_profile = cur_session.full_config["profiles"][cur_session.profile]["source_profile"]
-                        src_session = boto3.Session(profile_name=src_profile)
-                        cls._default_iam_username = src_session.resource("iam").CurrentUser().user.name
-                    else:
-                        caller_arn = ARN(clients.sts.get_caller_identity()["Arn"])
-                        cls._default_iam_username = caller_arn.resource.split("/")[-1]
+                    caller_arn = ARN(clients.sts.get_caller_identity()["Arn"])
+                    cls._default_iam_username = caller_arn.resource.split("/")[-1]
                 except Exception:
                     cls._default_iam_username = "unknown"
         return cls._default_iam_username
