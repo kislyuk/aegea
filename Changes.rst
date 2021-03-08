@@ -1,3 +1,8 @@
+Changes for v3.6.52 (2021-03-08)
+================================
+
+-  Avoid assumptions about source profile IAM usernames
+
 Changes for v3.6.51 (2021-03-02)
 ================================
 
