@@ -388,8 +388,8 @@ def watch(args, print_event_fn=print_event):
     job_desc = get_job_desc(args.job_id)
     args.job_name = job_desc["jobName"]
     logger.info("Watching job %s (%s)", args.job_id, args.job_name)
-    last_status, log_reader = None, None
-    while last_status not in {"SUCCEEDED", "FAILED"}:
+    last_status, log_reader, job_done = None, None, False
+    while True:
         job_desc = get_job_desc(args.job_id)
         if job_desc["status"] != last_status:
             logger.info("Job %s %s", args.job_id, format_job_status(job_desc["status"]))
@@ -405,8 +405,15 @@ def watch(args, print_event_fn=print_event):
                     print_event_fn(event)
         if "statusReason" in job_desc:
             logger.info("Job %s: %s", args.job_id, job_desc["statusReason"])
-        if job_desc.get("container", {}).get("exitCode"):
-            return SystemExit(job_desc["container"]["exitCode"])
+        # When a job is finished, we do one last iteration to read any log lines that were still being delivered.
+        if job_done:
+            if job_desc.get("container", {}).get("exitCode"):
+                return SystemExit(job_desc["container"]["exitCode"])
+            elif last_status == "FAILED":
+                return SystemExit(-1)
+            return SystemExit(os.EX_OK)
+        if last_status in {"SUCCEEDED", "FAILED"}:
+            job_done = True
         time.sleep(1)
 
 get_logs_parser = register_parser(get_logs, parent=batch_parser, help="Retrieve logs for a Batch job")
