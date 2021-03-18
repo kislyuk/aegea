@@ -66,6 +66,8 @@ build_image:
     - git
     - aria2
     - sift
+    - ripgrep
+    - fd-find
     - ca-certificates
     - apt-transport-https
     - software-properties-common
