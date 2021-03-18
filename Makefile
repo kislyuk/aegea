@@ -13,7 +13,7 @@ aegea/version.py: setup.py
 	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
-	pip install coverage flake8 mypy
+	python -m pip install coverage flake8 mypy
 
 lint: test_deps
 	./setup.py flake8
@@ -30,9 +30,9 @@ docs:
 	$(MAKE) -C docs html
 
 install: clean version
-	pip install wheel
+	python -m pip install wheel
 	./setup.py bdist_wheel
-	pip install --upgrade dist/*.whl
+	python -m pip install --upgrade dist/*.whl
 
 install_venv: clean
 	virtualenv --prompt "(aegea-venv) " .venv
