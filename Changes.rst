@@ -1,3 +1,10 @@
+Changes for v3.6.53 (2021-03-17)
+================================
+
+-  Add ripgrep and fd to base AMI
+
+-  batch watch: Sleep on exit to capture more logs
+
 Changes for v3.6.52 (2021-03-08)
 ================================
 
