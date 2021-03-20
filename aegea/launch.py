@@ -135,7 +135,7 @@ def launch(args):
                        KeyName=ssh_key_name,
                        SecurityGroupIds=[sg.id for sg in security_groups],
                        InstanceType=args.instance_type,
-                       BlockDeviceMappings=get_bdm(ebs_storage=args.storage),
+                       BlockDeviceMappings=get_bdm(ami=args.ami, ebs_storage=args.storage),
                        UserData=get_user_data(**user_data_args))
     tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
@@ -220,6 +220,11 @@ def launch(args):
 
 parser = register_parser(launch)
 parser.add_argument("hostname")
+parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
+                    type=lambda x: x.rstrip("GBgb").split("=", 1),
+                    help="At launch time, attach EBS volume(s) of this size, format and mount them.")
+parser.add_argument("--efs-home", action="store_true",
+                    help="Create and manage an EFS filesystem that the instance will use for user home directories")
 parser.add_argument("--commands", nargs="+", metavar="COMMAND", help="Commands to run on host upon startup")
 parser.add_argument("--packages", nargs="+", metavar="PACKAGE", help="APT packages to install on host upon startup")
 parser.add_argument("--ssh-key-name")
@@ -248,11 +253,6 @@ parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", type=lambda x: x.
                     help="Tags to apply to launched instances.")
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
-parser.add_argument("--efs-home", action="store_true",
-                    help="Create and manage an EFS filesystem that the instance will use for user home directories")
-parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
-                    type=lambda x: x.rstrip("GBgb").split("=", 1),
-                    help="At launch time, attach EBS volume(s) of this size, format and mount them.")
 parser.add_argument("--iam-role", default=__name__,
                     help="Pass this IAM role to the launched instance through an instance profile. Role credentials will become available in the instance metadata.")  # noqa
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",

@@ -268,13 +268,21 @@ def resolve_instance_id(name):
     except IndexError:
         raise AegeaException('Could not resolve "{}" to a known instance'.format(name))
 
-def get_bdm(max_devices=12, ebs_storage=frozenset()):
+def get_bdm(ami=None, max_devices=12, ebs_storage=frozenset()):
     # Note: d2.8xl and hs1.8xl have 24 devices
     bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b") + i)) for i in range(max_devices)]
     ebs_bdm = []  # type: List[Dict]
     for i, (mountpoint, size_gb) in enumerate(ebs_storage):
-        ebs_spec = dict(Encrypted=True, DeleteOnTermination=True, VolumeType="st1", VolumeSize=int(size_gb))
-        ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z") - i), Ebs=ebs_spec))
+        if mountpoint == "/":
+            rootfs_bdm = resources.ec2.Image(ami).block_device_mappings[0]
+            if "Ebs" not in rootfs_bdm or "SnapshotId" not in rootfs_bdm.get("Ebs", []):
+                raise AegeaException("Unable to locate block device mapping for root volume of {}".format(ami))
+            rootfs_bdm["Ebs"]["VolumeSize"] = int(size_gb)
+            bdm.insert(0, rootfs_bdm)
+        else:
+            volume_type = "st1" if int(size_gb) > 125 else "gp3"
+            ebs_spec = dict(Encrypted=True, DeleteOnTermination=True, VolumeType=volume_type, VolumeSize=int(size_gb))
+            ebs_bdm.insert(0, dict(DeviceName="xvd" + chr(ord("z") - i), Ebs=ebs_spec))
     bdm.extend(ebs_bdm)
     return bdm
 
