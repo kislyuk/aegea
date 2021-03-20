@@ -12,8 +12,15 @@ RequestSpotInstances API. The --duration-hours, --cores, and
 API.
 
 The return value (stdout) is a JSON object with one key, ``instance_id``.
-"""
 
+Examples:
+
+- Launch an on-demand t3.micro instance with the root volume enlarged to 64GB and another 64GB volume attached at /mnt:
+    aegea launch my-instance --storage /=64GB /mnt=64GB
+
+- Launch a spot r5d.xlarge instance with the home directory mounted on EFS:
+    aegea launch my-instance --spot-price 1 --instance-type r5d.xlarge --efs-home
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, time, datetime, base64, json
@@ -240,7 +247,7 @@ parser.add_argument("--spot", action="store_true",
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")
 parser.add_argument("--cores", type=int, help="Minimum number of cores to request (spot fleet API)")
 parser.add_argument("--min-mem-per-core-gb", type=float)
-parser.add_argument("--instance-type", "-t").completer = instance_type_completer
+parser.add_argument("--instance-type", "-t", help="See https://ec2instances.info/").completer = instance_type_completer
 parser.add_argument("--spot-price", type=float,
                     help="Maximum bid price for spot instances. Defaults to 1.2x the ondemand price.")
 parser.add_argument("--no-dns", dest="use_dns", action="store_false", help="""
