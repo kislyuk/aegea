@@ -55,11 +55,17 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
 def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
                   mime_multipart_archive=False, ssh_ca_keys=None, provision_users=None, **kwargs):
     cloud_config_data = OrderedDict()  # type: OrderedDict[str, Any]
+    cloud_config_data["bootcmd"] = [
+        "for d in /dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol?????????????????; do "
+        "a=/dev/$(nvme id-ctrl --raw-binary $d 2>/dev/null | dd skip=3072 bs=1 count=4 status=none); "
+        "[[ -e $a ]] || ln -s $d $a; "
+        "done"
+    ]
     for i, (mountpoint, size_gb) in enumerate(storage):
         cloud_config_data.setdefault("fs_setup", [])
         cloud_config_data.setdefault("mounts", [])
         device = "/dev/xvd" + chr(ord("z") - i)
-        fs_spec = dict(device=device, filesystem="ext4", partition="none")
+        fs_spec = dict(device=device, filesystem="xfs", partition="none")
         cloud_config_data["fs_setup"].append(fs_spec)
         cloud_config_data["mounts"].append([device, mountpoint, "auto", "defaults", "0", "2"])
     cloud_config_data["packages"] = packages or []
