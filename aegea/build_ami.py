@@ -13,12 +13,14 @@ from .launch import launch, parser as launch_parser
 def build_ami(args):
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
+    if args.instance_type is None:
+        args.instance_type = config.build_ami.default_builder_instance_type[args.architecture]
     if args.snapshot_existing_host:
         instance = resources.ec2.Instance(resolve_instance_id(args.snapshot_existing_host))
         args.ami = instance.image_id
     else:
         if args.base_ami == "auto":
-            args.ami = locate_ami(product=args.base_ami_product)
+            args.ami = locate_ami(product=args.base_ami_product.format(architecture=args.architecture))
         else:
             args.ami = args.base_ami
         hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
@@ -73,7 +75,10 @@ parser.add_argument("--snapshot-existing-host", type=str, metavar="HOST")
 parser.add_argument("--wait-for-ami", action="store_true")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
-parser.add_argument("--instance-type", default="c5.xlarge", help="Instance type to use for building the AMI")
+parser.add_argument("--instance-type", default=None,
+                    help="Instance type to use for building AMI (default: c5.xlarge for x86_64, c6gd.xlarge for arm64)")
+parser.add_argument("--architecture", default="x86_64", choices={"x86_64", "arm64"},
+                    help="CPU architecture for building the AMI")
 parser.add_argument("--security-groups", nargs="+")
 parser.add_argument("--base-ami")
 parser.add_argument("--base-ami-product",

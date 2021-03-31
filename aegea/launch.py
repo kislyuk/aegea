@@ -103,7 +103,8 @@ def launch(args):
             args.ami = resolve_ami(args.ami, tags=ami_tags, arch=arch)
         except AegeaException as e:
             if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
-                raise AegeaException("No AMI was given, and no AMIs were found in this account. "
+                raise AegeaException("No AMI was given, and no " + arch + " AMIs were found in this account. "
+                                     "To build an aegea AMI, use aegea build-ami --architecture " + arch + ". "
                                      "To use the default Ubuntu Linux LTS AMI, use --ubuntu-linux-ami. "
                                      "To use the default Amazon Linux 2 AMI, use --amazon-linux-ami. ")
             raise
