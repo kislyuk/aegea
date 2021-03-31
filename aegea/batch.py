@@ -94,7 +94,7 @@ def create_compute_environment(args):
         if args.ecs_container_instance_ami:
             ecs_ami_id = args.ecs_container_instance_ami
         elif args.ecs_container_instance_ami_tags:
-            ecs_ami_id = resolve_ami(**args.ecs_container_instance_ami_tags)
+            ecs_ami_id = resolve_ami(tags=args.ecs_container_instance_ami_tags)
         else:
             ecs_ami_id = get_ssm_parameter("/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id")
         launch_template = ensure_launch_template(ImageId=ecs_ami_id,

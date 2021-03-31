@@ -68,6 +68,11 @@ def get_ssh_ca_keys(bless_config):
     ca_keys = json.loads(ca_keys_secret["SecretString"])["ssh_ca_keys"]
     return "\n".join(ca_keys)
 
+def infer_architecture(instance_type):
+    if any((instance_type.startswith(f) for f in ("x2g", "m6g", "c6g", "r6g", "t4g", "a1"))):
+        return "arm64"
+    return "x86_64"
+
 def launch(args):
     if args.spot_price or args.duration_hours or args.cores or args.min_mem_per_core_gb:
         args.spot = True
@@ -88,13 +93,14 @@ def launch(args):
         validate_hostname(args.hostname)
         assert not args.hostname.startswith("i-")
     ami_tags = dict(tag.split("=", 1) for tag in args.ami_tags or [])
+    arch = infer_architecture(instance_type=args.instance_type)
     if args.ubuntu_linux_ami:
-        args.ami = locate_ami(product="com.ubuntu.cloud:server:20.04:amd64")
+        args.ami = locate_ami(product="com.ubuntu.cloud:server:20.04:" + ("amd64" if arch == "x86_64" else "arm64"))
     elif args.amazon_linux_ami:
-        args.ami = get_ssm_parameter("/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2")
+        args.ami = get_ssm_parameter("/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{}-gp2".format(arch))
     else:
         try:
-            args.ami = resolve_ami(args.ami, **ami_tags)
+            args.ami = resolve_ami(args.ami, tags=ami_tags, arch=arch)
         except AegeaException as e:
             if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
                 raise AegeaException("No AMI was given, and no AMIs were found in this account. "

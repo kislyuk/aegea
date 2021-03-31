@@ -300,7 +300,7 @@ def expect_error_codes(exception, *codes):
     if getattr(exception, "response", None) and exception.response.get("Error", {}).get("Code", {}) not in codes:
         raise
 
-def resolve_ami(ami=None, **tags):
+def resolve_ami(ami=None, arch="x86_64", tags=frozenset()):
     """
     Find an AMI by ID, name, or tags.
     - If an ID is given, it is returned with no validation; otherwise, selects the most recent AMI from:
@@ -309,9 +309,12 @@ def resolve_ami(ami=None, **tags):
     - If no AMIs found, all available AMIs in this account (filtered by tags given).
     Return the AMI with the most recent creation date.
     """
+    assert arch in {"x86_64", "arm64"}
+
     if ami is None or not ami.startswith("ami-"):
         if ami is None:
-            filters = dict(Owners=["self"], Filters=[dict(Name="state", Values=["available"])])
+            filters = dict(Owners=["self"],
+                           Filters=[dict(Name="state", Values=["available"]), dict(Name="architecture", Values=[arch])])
         else:
             filters = dict(Owners=["self"], Filters=[dict(Name="name", Values=[ami])])
         all_amis = resources.ec2.images.filter(**filters)
