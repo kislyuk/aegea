@@ -112,7 +112,7 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
-    - "pip3 install awscli-cwlogs==1.4.6 keymaker==1.1.0 boto3==1.11.13 awscli==1.17.13 miniwdl==0.7.4"
+    - "pip3 install awscli-cwlogs==1.4.6 keymaker==1.1.0 boto3==1.17.53 awscli==1.19.53 miniwdl==1.1.3"
     - "keymaker install"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
