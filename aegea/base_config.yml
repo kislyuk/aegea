@@ -84,7 +84,7 @@ build_docker_image:
 
 build_ami:
   base_ami: auto
-  base_ami_product: com.ubuntu.cloud:server:20.04:{architecture}
+  base_ami_distribution: Ubuntu:20.04
   architecture: x86_64
   default_builder_instance_type:
     x86_64: c5.xlarge

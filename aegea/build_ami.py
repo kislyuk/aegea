@@ -20,7 +20,8 @@ def build_ami(args):
         args.ami = instance.image_id
     else:
         if args.base_ami == "auto":
-            args.ami = locate_ami(product=args.base_ami_product.format(architecture=args.architecture))
+            distribution, release = args.base_ami_distribution.split(":", 1)
+            args.ami = locate_ami(distribution=distribution, release=release, architecture=args.architecture)
         else:
             args.ami = args.base_ami
         hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
@@ -81,8 +82,8 @@ parser.add_argument("--architecture", default="x86_64", choices={"x86_64", "arm6
                     help="CPU architecture for building the AMI")
 parser.add_argument("--security-groups", nargs="+")
 parser.add_argument("--base-ami")
-parser.add_argument("--base-ami-product",
-                    help='Locate AMI for product, e.g. com.ubuntu.cloud:server:16.04:amd64, "Amazon Linux AMI 2016.09"')
+parser.add_argument("--base-ami-distribution",
+                    help="Use AMI for this distribution (examples: Ubuntu:20.04, Amazon Linux:2")
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)

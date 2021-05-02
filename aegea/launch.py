@@ -95,9 +95,9 @@ def launch(args):
     ami_tags = dict(tag.split("=", 1) for tag in args.ami_tags or [])
     arch = infer_architecture(instance_type=args.instance_type)
     if args.ubuntu_linux_ami:
-        args.ami = locate_ami(product="com.ubuntu.cloud:server:20.04:" + ("amd64" if arch == "x86_64" else "arm64"))
+        args.ami = locate_ami("Ubuntu", release="20.04", architecture=arch)
     elif args.amazon_linux_ami:
-        args.ami = get_ssm_parameter("/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{}-gp2".format(arch))
+        args.ami = locate_ami("Amazon Linux", release="2", architecture=arch)
     else:
         try:
             args.ami = resolve_ami(args.ami, tags=ami_tags, arch=arch)

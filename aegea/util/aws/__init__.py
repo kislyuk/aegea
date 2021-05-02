@@ -19,43 +19,28 @@ from . import clients, resources
 def get_ssm_parameter(name):
     return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
 
-def locate_ami(product, region=None, channel="releases", stream="released", root_store="ssd", virt="hvm"):
+def locate_ami(distribution, release, architecture):
     """
     Examples::
-        locate_ami(product="com.ubuntu.cloud:server:20.04:amd64", channel="daily", stream="daily", region="us-west-2")
-        locate_ami(product="Amazon Linux AMI 2016.09")
+        locate_ami(distribution="Ubuntu", release="20.04", architecture="amd64")
+        locate_ami(distribution="Amazon Linux", release="2", architecture="arm64")
     """
-    if region is None:
-        region = clients.ec2.meta.region_name
-    if product.startswith("com.ubuntu.cloud"):
-        partition = "aws"
-        if region.startswith("cn-"):
-            partition = "aws-cn"
-        elif region.startswith("us-gov-"):
-            partition = "aws-govcloud"
-        if partition not in {"aws", "aws-cn", "aws-govcloud"}:
-            raise AegeaException("Unrecognized partition {}".format(partition))
-        manifest_url = "https://cloud-images.ubuntu.com/{channel}/streams/v1/com.ubuntu.cloud:{stream}:{partition}.json"
-        manifest_url = manifest_url.format(partition=partition, channel=channel, stream=stream)
-        manifest = requests.get(manifest_url).json()
-        if product not in manifest["products"]:
-            raise AegeaException("Ubuntu version {} not found in Ubuntu cloud image manifest".format(product))
-        versions = manifest["products"][product]["versions"]
-        for version in sorted(versions.keys(), reverse=True)[:8]:
-            for ami in versions[version]["items"].values():
-                if ami["crsn"] == region and ami["root_store"] == root_store and ami["virt"] == virt:
-                    logger.info("Found %s for %s", ami["id"], ":".join([product, version, region, root_store, virt]))
-                    return ami["id"]
-    elif product.startswith("Amazon Linux"):
-        filters = {"root-device-type": "ebs" if root_store == "ssd" else root_store, "virtualization-type": virt,
-                   "architecture": "x86_64", "owner-alias": "amazon", "state": "available"}
-        images = resources.ec2.images.filter(Filters=[dict(Name=k, Values=[v]) for k, v in filters.items()])
-        for image in sorted(images, key=lambda i: i.creation_date, reverse=True):
-            if root_store == "ebs" and not image.name.endswith("x86_64-gp2"):
-                continue
-            if image.name.startswith("amzn-ami-" + virt) and image.description.startswith(product):
-                return image.image_id
-    raise AegeaException("No AMI found for {} {} {} {}".format(product, region, root_store, virt))
+    if distribution == "Amazon Linux" and release == "2":
+        if architecture == "amd64":
+            architecture = "x86_64"
+        ssm_param_name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{}-gp2".format(architecture)
+        ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
+        logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
+        return ami_id
+    elif distribution == "Ubuntu":
+        if architecture == "x86_64":
+            architecture = "amd64"
+        ssm_param_name = "/aws/service/canonical/ubuntu/{product}/{release}/stable/current/{arch}/hvm/ebs-gp2/ami-id"
+        ssm_param_name = ssm_param_name.format(product="server", release=release, arch=architecture)
+        ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
+        logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
+        return ami_id
+    raise AegeaException("No AMI found for {} {} {}".format(distribution, version, architecture))
 
 def ensure_vpc():
     for vpc in resources.ec2.vpcs.filter(Filters=[dict(Name="isDefault", Values=["true"])]):
