@@ -30,7 +30,6 @@ setuptools.setup(
         "babel >= 2.4.0, < 3",
         "ipwhois >= 1.1.0, < 2",
         "uritemplate >= 3.0.0, < 4",
-        "awscli >= 1.18.203, < 2",
         "chalice >= 1.21.7, < 2"
     ],
     extras_require={
