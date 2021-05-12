@@ -14,19 +14,6 @@ Installation
 
    pip3 install aegea
 
-Before you do this, you will also need to install some system library dependencies:
-
-+--------------+-------------------------------------------------------------------------------------------------------+
-| OS           | Command                                                                                               |
-+==============+=======================================================================================================+
-| Mac OS       | Install `Homebrew <https://brew.sh>`_, then run ``brew install python``.                              |
-+--------------+-------------------------------------------------------------------------------------------------------+
-| Ubuntu       | sudo apt-get update;                                                                                  |
-|              | sudo apt-get install build-essential python3-{pip,dev,cffi} libffi-dev libssl-dev moreutils           |
-+--------------+-------------------------------------------------------------------------------------------------------+
-| Red Hat      | sudo yum install python3-devel python3-cffi openssl-devel moreutils                                   |
-+--------------+-------------------------------------------------------------------------------------------------------+
-
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
 ``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users. See the
 `AWS CLI documentation <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html>`_ for more details.
