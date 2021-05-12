@@ -297,6 +297,9 @@ def add_job_defn_args(parser):
     parser.add_argument("--memory-mb", dest="memory", type=int,
                         help="Memory to allocate to the Docker container (this is both a soft and a hard limit)")
     parser.add_argument("--user", help="Name or ID of user to use in the Docker container")
+    parser.add_argument("--log-driver", help="Custom log driver")
+    parser.add_argument("--log-options", help="Custom log configuration options", nargs="+", metavar="NAME=VALUE",
+                        type=lambda x: x.split("=", 1), default=[])
 
 add_command_args(submit_parser)
 
@@ -381,7 +384,10 @@ def print_event(event):
     print(str(Timestamp(event["timestamp"])) + " " + event["message"])
 
 def get_logs(args, print_event_fn=print_event):
-    for event in CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail):
+    for event in CloudwatchLogReader(log_group_name=args.log_group_name,
+                                     log_stream_name=args.log_stream_name,
+                                     head=args.head,
+                                     tail=args.tail):
         print_event_fn(event)
 
 def watch(args, print_event_fn=print_event):
@@ -396,11 +402,19 @@ def watch(args, print_event_fn=print_event):
             last_status = job_desc["status"]
             if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
                 logger.info("Job %s log stream: %s", args.job_id, job_desc.get("container", {}).get("logStreamName"))
+        container_desc = job_desc.get("container", {})
         if job_desc["status"] in {"RUNNING", "SUCCEEDED", "FAILED"}:
+            try:
+                log_group_name = container_desc["logConfiguration"]["options"]["awslogs-group"]
+            except KeyError:
+                log_group_name = "/aws/batch/job"
             if "logStreamName" in job_desc.get("container", {}):
                 args.log_stream_name = job_desc["container"]["logStreamName"]
                 if log_reader is None:
-                    log_reader = CloudwatchLogReader(args.log_stream_name, head=args.head, tail=args.tail)
+                    log_reader = CloudwatchLogReader(log_group_name=log_group_name,
+                                                     log_stream_name=args.log_stream_name,
+                                                     head=args.head,
+                                                     tail=args.tail)
                 for event in log_reader:
                     print_event_fn(event)
         if "statusReason" in job_desc:
@@ -417,6 +431,7 @@ def watch(args, print_event_fn=print_event):
         time.sleep(1)
 
 get_logs_parser = register_parser(get_logs, parent=batch_parser, help="Retrieve logs for a Batch job")
+get_logs_parser.add_argument("log_group_name", default="/aws/batch/job")
 get_logs_parser.add_argument("log_stream_name")
 watch_parser = register_parser(watch, parent=batch_parser, help="Monitor a running Batch job and stream its logs")
 watch_parser.add_argument("job_id")

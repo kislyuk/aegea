@@ -220,8 +220,10 @@ def format_task_status(status):
 def watch(args):
     logger.info("Watching task %s (%s)", args.task_id, args.cluster)
     last_status, events_received = None, 0
-    log_reader = CloudwatchLogReader("/".join([args.task_name, args.task_name, os.path.basename(args.task_id)]),
-                                     log_group_name=args.task_name)
+    log_reader = CloudwatchLogReader(
+        log_group_name=args.task_name,
+        log_stream_name="/".join([args.task_name, args.task_name, os.path.basename(args.task_id)])
+    )
     while last_status != "STOPPED":
         res = clients.ecs.describe_tasks(cluster=args.cluster, tasks=[args.task_id])
         if len(res["tasks"]) == 1:

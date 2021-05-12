@@ -192,6 +192,12 @@ def ensure_job_definition(args):
     container_props["volumes"], container_props["mountPoints"] = get_volumes_and_mountpoints(args)
     if args.gpus:
         container_props["resourceRequirements"].append(dict(type="GPU", value=str(args.gpus)))
+    if args.log_driver:
+        container_props.setdefault("logConfiguration", {})
+        container_props["logConfiguration"]["logDriver"] = args.log_driver
+    if args.log_options:
+        container_props.setdefault("logConfiguration", {})
+        container_props["logConfiguration"]["options"] = {k: v for k, v in args.log_options}
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"], policies=args.default_job_role_iam_policies)
     container_props.update(jobRoleArn=iam_role.arn)
     expect_job_defn = dict(status="ACTIVE", type="container", parameters={}, tags={},

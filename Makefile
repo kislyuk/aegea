@@ -7,21 +7,21 @@ constants: aegea/constants.json
 version: aegea/version.py
 
 aegea/constants.json:
-	python -c "import aegea; aegea.initialize(); from aegea.util.constants import write; write()"
+	python3 -c "import aegea; aegea.initialize(); from aegea.util.constants import write; write()"
 
 aegea/version.py: setup.py
 	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
-	python -m pip install coverage flake8 mypy
+	python3 -m pip install coverage flake8 mypy
 
 lint: test_deps
-	./setup.py flake8
-	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python' aegea/missions aegea/rootfs.skel scripts)
-	mypy --check-untyped-defs --no-strict-optional $$(python setup.py --name)
+	flake8 $$(python3 setup.py --name)
+	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python3' aegea/missions aegea/rootfs.skel scripts)
+	mypy --check-untyped-defs --no-strict-optional $$(python3 setup.py --name)
 
 test: test_deps
-	coverage run --source=$$(python setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose
+	coverage run --source=$$(python3 setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose
 
 init_docs:
 	cd docs; sphinx-quickstart
@@ -30,9 +30,9 @@ docs:
 	$(MAKE) -C docs html
 
 install: clean version
-	python -m pip install wheel
+	python3 -m pip install wheel
 	./setup.py bdist_wheel
-	python -m pip install --upgrade dist/*.whl
+	python3 -m pip install --upgrade dist/*.whl
 
 install_venv: clean
 	virtualenv --prompt "(aegea-venv) " .venv

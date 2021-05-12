@@ -40,7 +40,7 @@ def locate_ami(distribution, release, architecture):
         ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return ami_id
-    raise AegeaException("No AMI found for {} {} {}".format(distribution, version, architecture))
+    raise AegeaException("No AMI found for {} {} {}".format(distribution, release, architecture))
 
 def ensure_vpc():
     for vpc in resources.ec2.vpcs.filter(Filters=[dict(Name="isDefault", Values=["true"])]):

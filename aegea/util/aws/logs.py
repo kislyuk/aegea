@@ -10,7 +10,7 @@ from . import ARN, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
 from .iam import IAMPolicyBuilder
 
 class CloudwatchLogReader:
-    def __init__(self, log_stream_name, head=None, tail=None, log_group_name="/aws/batch/job"):
+    def __init__(self, log_stream_name, log_group_name="/aws/batch/job", head=None, tail=None):
         self.log_group_name = log_group_name
         self.log_stream_name = log_stream_name
         self.head, self.tail = head, tail
