@@ -1,3 +1,11 @@
+Changes for v3.7.2 (2021-05-12)
+===============================
+
+-  batch: use custom log group if set
+
+-  Drop direct dependency on awscli to facilitate awscli v2
+   compatibility
+
 Changes for v3.7.1 (2021-05-01)
 ===============================
 
