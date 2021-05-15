@@ -69,7 +69,7 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
         send_command_args.update(InstanceIds=instance_ids)
     if targets:
         send_command_args.update(Targets=targets)
-    log_readers, stdout = {}, []  # type: ignore
+    log_readers, stdout, command_id = {}, [], None  # type: ignore
     try:
         command_id = clients.ssm.send_command(**send_command_args)["Command"]["CommandId"]
         while True:
@@ -106,9 +106,10 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
             except clients.logs.exceptions.ResourceNotFoundException:
                 logger.debug("No logs for %s", log_stream_name)
     except KeyboardInterrupt:
-        logger.error("Cancelling SSM command")
-        clients.ssm.cancel_command(CommandId=command_id)
-        logger.error("SSM command cancelled")
+        if command_id:
+            logger.error("Cancelling SSM command")
+            clients.ssm.cancel_command(CommandId=command_id)
+            logger.error("SSM command cancelled")
         raise
     logger.info("SSM command completed")
     return stdout
