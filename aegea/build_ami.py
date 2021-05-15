@@ -11,6 +11,8 @@ from .util.printing import GREEN
 from .launch import launch, parser as launch_parser
 
 def build_ami(args):
+    if args.name is None:
+        args.name = "aegea-{}-{}".format(args.architecture, time.strftime("%Y-%m-%d-%H-%M"))
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
     if args.instance_type is None:
@@ -71,7 +73,7 @@ def build_ami(args):
     return dict(ImageID=image.id, **tags)
 
 parser = register_parser(build_ami, help="Build an EC2 AMI")
-parser.add_argument("name", default="test")
+parser.add_argument("name", help="Default: aegea-ARCH-YYYY-MM-DD-HH-MM", nargs="?")
 parser.add_argument("--snapshot-existing-host", type=str, metavar="HOST")
 parser.add_argument("--wait-for-ami", action="store_true")
 parser.add_argument("--ssh-key-name")
