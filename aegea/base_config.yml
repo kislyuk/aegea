@@ -407,6 +407,7 @@ sfrs:
 subnets:
   resource: ec2
   subresource: Subnet
+  sort_by: vpc_id
   columns:
     - id
     - vpc_id
