@@ -34,6 +34,10 @@ def rm(args):
                 resources.ec2.Volume(name).delete(DryRun=not args.force)
             elif name.startswith("snap-"):
                 resources.ec2.Snapshot(name).delete(DryRun=not args.force)
+            elif name.startswith("subnet-"):
+                resources.ec2.Subnet(name).delete(DryRun=not args.force)
+            elif name.startswith("vpc-"):
+                resources.ec2.Vpc(name).delete(DryRun=not args.force)
             elif name.startswith("lt-"):
                 clients.ec2.delete_launch_template(LaunchTemplateId=name, DryRun=not args.force)
             elif name.startswith("eigw-"):
