@@ -9,9 +9,50 @@ EC2 key pairs have no ARNs and no distingiushing ID prefix. To delete them by na
 """
 
 import os, sys, argparse, subprocess, time
-from . import register_parser, logger
-from .util.aws import expect_error_codes, resources, clients
+
 from botocore.exceptions import ClientError
+
+from . import register_parser, logger
+from .util.aws import expect_error_codes, resources, clients, paginate
+
+def delete_vpc(name, args):
+    vpc = resources.ec2.Vpc(name)
+    for eigw in paginate(clients.ec2.get_paginator('describe_egress_only_internet_gateways')):
+        for attachment in eigw["Attachments"]:
+            if attachment.get("VpcId") == vpc.id:
+                logger.info("Will delete %s", eigw["EgressOnlyInternetGatewayId"])
+                clients.ec2.delete_egress_only_internet_gateway(
+                    EgressOnlyInternetGatewayId=eigw["EgressOnlyInternetGatewayId"],
+                    DryRun=not args.force
+                )
+    for igw in vpc.internet_gateways.all():
+        logger.info("Will delete %s", igw)
+        igw.detach_from_vpc(VpcId=vpc.id, DryRun=not args.force)
+        igw.delete(DryRun=not args.force)
+    for security_group in vpc.security_groups.all():
+        if security_group.group_name != "default":
+            logger.info("Will delete %s", security_group)
+            security_group.delete(DryRun=not args.force)
+    for nacl in vpc.network_acls.all():
+        if not nacl.is_default:
+            logger.info("Will delete %s", nacl)
+            nacl.delete(DryRun=not args.force)
+    for route_table in vpc.route_tables.all():
+        logger.info("Will delete %s", route_table)
+        for route in route_table.routes:
+            try:
+                route.delete(DryRun=not args.force)
+            except ClientError:
+                pass
+        try:
+            route_table.delete(DryRun=not args.force)
+        except ClientError:
+            pass
+    for subnet in vpc.subnets.all():
+        logger.info("Will delete %s", subnet)
+        subnet.delete(DryRun=not args.force)
+    logger.info("Will delete %s", vpc)
+    vpc.delete(DryRun=not args.force)
 
 def rm(args):
     for name in args.names:
@@ -37,9 +78,11 @@ def rm(args):
             elif name.startswith("subnet-"):
                 resources.ec2.Subnet(name).delete(DryRun=not args.force)
             elif name.startswith("vpc-"):
-                resources.ec2.Vpc(name).delete(DryRun=not args.force)
+                delete_vpc(name, args)
             elif name.startswith("lt-"):
                 clients.ec2.delete_launch_template(LaunchTemplateId=name, DryRun=not args.force)
+            elif name.startswith("igw-"):
+                clients.ec2.delete_internet_gateway(InternetGatewayId=name, DryRun=not args.force)
             elif name.startswith("eigw-"):
                 clients.ec2.delete_egress_only_internet_gateway(EgressOnlyInternetGatewayId=name, DryRun=not args.force)
             elif name.startswith("fl-"):

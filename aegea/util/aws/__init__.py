@@ -43,10 +43,14 @@ def locate_ami(distribution, release, architecture):
     raise AegeaException("No AMI found for {} {} {}".format(distribution, release, architecture))
 
 def ensure_vpc():
+    """
+    If a default VPC exists in the current account/region, return it; otherwise, return the first VPC managed by aegea,
+    creating a new one (with an associated IGW, route table, and subnet per AZ) if it does not exist.
+    """
     for vpc in resources.ec2.vpcs.filter(Filters=[dict(Name="isDefault", Values=["true"])]):
         break
     else:
-        for vpc in resources.ec2.vpcs.all():
+        for vpc in resources.ec2.vpcs.filter(Filters=[dict(Name="tag:managedBy", Values=["aegea"])]):
             break
         else:
             from ... import config
@@ -57,15 +61,22 @@ def ensure_vpc():
             clients.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc.id])
             vpc.modify_attribute(EnableDnsSupport=dict(Value=config.vpc.enable_dns_support))
             vpc.modify_attribute(EnableDnsHostnames=dict(Value=config.vpc.enable_dns_hostnames))
+            clients.ec2.associate_vpc_cidr_block(VpcId=vpc.id, AmazonProvidedIpv6CidrBlock=True)
+
             tags = dict(Name="aegea-igw", managedBy="aegea")
             tag_spec = dict(ResourceType="internet-gateway", Tags=encode_tags(tags))
             internet_gateway = resources.ec2.create_internet_gateway(TagSpecifications=[tag_spec])
             vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
             for route_table in vpc.route_tables.all():
                 route_table.create_route(DestinationCidrBlock="0.0.0.0/0", GatewayId=internet_gateway.id)
+
             tags = dict(Name="aegea-eigw", managedBy="aegea")
             tag_spec = dict(ResourceType="egress-only-internet-gateway", Tags=encode_tags(tags))
-            clients.ec2.create_egress_only_internet_gateway(VpcId=vpc.id, TagSpecifications=[tag_spec])
+            res = clients.ec2.create_egress_only_internet_gateway(VpcId=vpc.id, TagSpecifications=[tag_spec])
+            eigw_id = res["EgressOnlyInternetGateway"]["EgressOnlyInternetGatewayId"]
+            for route_table in vpc.route_tables.all():
+                route_table.create_route(DestinationIpv6CidrBlock="::/0", EgressOnlyInternetGatewayId=eigw_id)
+
             ensure_subnet(vpc)
     return vpc
 
@@ -74,6 +85,11 @@ def availability_zones():
         yield az["ZoneName"]
 
 def ensure_subnet(vpc, availability_zone=None):
+    """
+    Find and return a subnet in the given VPC, or create one subnet per AZ and return one of them if no suitable subnet
+    is found.
+    """
+    # FIXME: if config.vpc.map_public_ip_on_launch is set, ignore subnets that don't have that attribute set
     if availability_zone is not None and availability_zone not in availability_zones():
         msg = "Unknown availability zone {} (choose from {})"
         raise AegeaException(msg.format(availability_zone, list(availability_zones())))

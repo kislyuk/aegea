@@ -31,23 +31,25 @@ def build_ami(args):
         launch_args.iam_role = args.iam_role
         launch_args.cloud_config_data.update(rootfs_skel_dirs=args.rootfs_skel_dirs)
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
-    ci_timeout = args.cloud_init_timeout
-    if ci_timeout <= 0:
-        ci_timeout = 3600
-    sys.stderr.write("Waiting {} seconds for cloud-init ...".format(ci_timeout))
+    sys.stderr.write("Waiting {} seconds for cloud-init ...".format(args.cloud_init_timeout_seconds))
     sys.stderr.flush()
-    for i in range(ci_timeout):
+
+    def wait():
+        sys.stderr.write(".")
+        sys.stderr.flush()
+        time.sleep(args.cloud_init_poll_interval_seconds)
+
+    for i in range(args.cloud_init_timeout_seconds // args.cloud_init_poll_interval_seconds):
         try:
             run_command("sudo jq --exit-status .v1.errors==[] /var/lib/cloud/data/result.json",
                         instance_ids=[instance.id])
             break
-        except clients.ssm.exceptions.InvalidInstanceId:
-            pass
+        except clients.ssm.exceptions.InvalidInstanceId as e:
+            print(type(e), e)
+            wait()
         except AegeaException as e:
             if "SSM command failed" in str(e):
-                sys.stderr.write(".")
-                sys.stderr.flush()
-                time.sleep(1)
+                wait()
             else:
                 raise
     else:
@@ -89,6 +91,6 @@ parser.add_argument("--base-ami-distribution",
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
 parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)
-parser.add_argument("--cloud-init-timeout", type=int, default=-1,
+parser.add_argument("--cloud-init-timeout-seconds", type=int,
                     help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
 parser.add_argument("--iam-role", default=__name__)
