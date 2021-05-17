@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, io, gzip, time, socket, hashlib, uuid
+import os, sys, json, io, gzip, time, socket, hashlib, uuid, ipaddress
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
@@ -63,6 +63,13 @@ def ensure_vpc():
             vpc.modify_attribute(EnableDnsHostnames=dict(Value=config.vpc.enable_dns_hostnames))
             clients.ec2.associate_vpc_cidr_block(VpcId=vpc.id, AmazonProvidedIpv6CidrBlock=True)
 
+            ensure_subnet(vpc)
+            vpc_cidr_block = vpc.ipv6_cidr_block_association_set[0]["Ipv6CidrBlock"]
+            subnet_cidr_blocks = list(ipaddress.ip_network(vpc_cidr_block).subnets(new_prefix=64))
+            for i, subnet in enumerate(vpc.subnets.all()):
+                logger.info("Assigning IPv6 CIDR block %s to %s", subnet_cidr_blocks[i], subnet)
+                clients.ec2.associate_subnet_cidr_block(SubnetId=subnet.id, Ipv6CidrBlock=str(subnet_cidr_blocks[i]))
+
             tags = dict(Name="aegea-igw", managedBy="aegea")
             tag_spec = dict(ResourceType="internet-gateway", Tags=encode_tags(tags))
             internet_gateway = resources.ec2.create_internet_gateway(TagSpecifications=[tag_spec])
@@ -76,8 +83,6 @@ def ensure_vpc():
             eigw_id = res["EgressOnlyInternetGateway"]["EgressOnlyInternetGatewayId"]
             for route_table in vpc.route_tables.all():
                 route_table.create_route(DestinationIpv6CidrBlock="::/0", EgressOnlyInternetGatewayId=eigw_id)
-
-            ensure_subnet(vpc)
     return vpc
 
 def availability_zones():
