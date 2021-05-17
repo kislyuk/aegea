@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, io, gzip, time, socket, hashlib, uuid, ipaddress
+import os, sys, json, io, gzip, time, socket, hashlib, uuid
 import requests
 from warnings import warn
 from datetime import datetime, timedelta
+from ipaddress import ip_network
 from typing import List, Dict, Any
 
 import boto3, botocore.session
@@ -63,12 +64,7 @@ def ensure_vpc():
             vpc.modify_attribute(EnableDnsHostnames=dict(Value=config.vpc.enable_dns_hostnames))
             clients.ec2.associate_vpc_cidr_block(VpcId=vpc.id, AmazonProvidedIpv6CidrBlock=True)
 
-            ensure_subnet(vpc)
-            vpc_cidr_block = vpc.ipv6_cidr_block_association_set[0]["Ipv6CidrBlock"]
-            subnet_cidr_blocks = list(ipaddress.ip_network(vpc_cidr_block).subnets(new_prefix=64))
-            for i, subnet in enumerate(vpc.subnets.all()):
-                logger.info("Assigning IPv6 CIDR block %s to %s", subnet_cidr_blocks[i], subnet)
-                clients.ec2.associate_subnet_cidr_block(SubnetId=subnet.id, Ipv6CidrBlock=str(subnet_cidr_blocks[i]))
+            ensure_subnet(vpc, assign_ipv6_cidr_blocks=True)
 
             tags = dict(Name="aegea-igw", managedBy="aegea")
             tag_spec = dict(ResourceType="internet-gateway", Tags=encode_tags(tags))
@@ -89,7 +85,7 @@ def availability_zones():
     for az in clients.ec2.describe_availability_zones()["AvailabilityZones"]:
         yield az["ZoneName"]
 
-def ensure_subnet(vpc, availability_zone=None):
+def ensure_subnet(vpc, availability_zone=None, assign_ipv6_cidr_blocks=False):
     """
     Find and return a subnet in the given VPC, or create one subnet per AZ and return one of them if no suitable subnet
     is found.
@@ -103,7 +99,6 @@ def ensure_subnet(vpc, availability_zone=None):
             continue
         break
     else:
-        from ipaddress import ip_network
         from ... import config
         subnet_cidrs = ip_network(str(config.vpc.cidr[ARN.get_region()])).subnets(new_prefix=config.vpc.subnet_prefix)
         subnets = {}
@@ -116,6 +111,16 @@ def ensure_subnet(vpc, availability_zone=None):
             clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnets[az].id])
             clients.ec2.modify_subnet_attribute(SubnetId=subnets[az].id,
                                                 MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch))
+        if assign_ipv6_cidr_blocks:
+            vpc_cidr_block = vpc.ipv6_cidr_block_association_set[0]["Ipv6CidrBlock"]
+            subnet_cidr_blocks = list(ip_network(vpc_cidr_block).subnets(new_prefix=64))
+            for i, subnet in enumerate(subnets.values()):
+                logger.info("Assigning IPv6 CIDR block %s to %s", subnet_cidr_blocks[i], subnet)
+                clients.ec2.associate_subnet_cidr_block(SubnetId=subnet.id, Ipv6CidrBlock=str(subnet_cidr_blocks[i]))
+                clients.ec2.modify_subnet_attribute(
+                    SubnetId=subnet.id,
+                    AssignIpv6AddressOnCreation=dict(Value=config.vpc.assign_ipv6_address_on_creation)
+                )
         subnet = subnets[availability_zone] if availability_zone is not None else list(subnets.values())[0]
     return subnet
 
