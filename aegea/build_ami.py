@@ -44,8 +44,7 @@ def build_ami(args):
             run_command("sudo jq --exit-status .v1.errors==[] /var/lib/cloud/data/result.json",
                         instance_ids=[instance.id])
             break
-        except clients.ssm.exceptions.InvalidInstanceId as e:
-            print(type(e), e)
+        except clients.ssm.exceptions.InvalidInstanceId:
             wait()
         except AegeaException as e:
             if "SSM command failed" in str(e):
