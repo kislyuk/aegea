@@ -140,10 +140,11 @@ def run(args):
             expect_task_defn["cpu"] = str(int(expect_task_defn["cpu"][:-len(" vCPU")]) * 1024)
         if expect_task_defn["memory"].endswith("GB"):
             expect_task_defn["memory"] = str(int(expect_task_defn["memory"][:-len("GB")]) * 1024)
-        assert task_defn == expect_task_defn
-        logger.debug("Reusing task definition %s", task_desc["taskDefinitionArn"])
+        for key in expect_task_defn:
+            assert expect_task_defn[key] == task_defn[key]
+        logger.info("Reusing task definition %s", task_desc["taskDefinitionArn"])
     except (ClientError, AssertionError):
-        logger.debug("Registering new ECS task definition %s", task_defn_name)
+        logger.info("Registering new ECS task definition %s", task_defn_name)
         task_desc = clients.ecs.register_task_definition(family=task_defn_name, **expect_task_defn)["taskDefinition"]
 
     network_config = {
