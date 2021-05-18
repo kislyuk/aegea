@@ -1,3 +1,16 @@
+Changes for v3.7.3 (2021-05-17)
+===============================
+
+-  Support IPv6 in aegea VPCs
+
+-  Use only aegea-managed or default VPCs
+
+-  rm: support deleting subnets and vpcs
+
+-  Sort subnets by vpc_id
+
+-  aegea build-ami: use default image name if not supplied
+
 Changes for v3.7.2 (2021-05-12)
 ===============================
 
