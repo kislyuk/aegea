@@ -100,7 +100,10 @@ def launch(args):
         args.ami = locate_ami("Amazon Linux", release="2", architecture=arch)
     else:
         try:
-            args.ami = resolve_ami(args.ami, tags=ami_tags, arch=arch)
+            if not (args.ami or args.ami_tags or args.ami_tag_keys):
+                args.ami_tag_keys.append("AegeaVersion")
+            args.ami = resolve_ami(args.ami, tags=ami_tags, tag_keys=args.ami_tag_keys, arch=arch)
+            logger.info("Using %s", args.ami)
         except AegeaException as e:
             if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
                 raise AegeaException("No AMI was given, and no " + arch + " AMIs were found in this account. "
@@ -247,6 +250,8 @@ parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
                     help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
 parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)  # type: ignore
 parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the most recent AMI with these tags")
+parser.add_argument("--ami-tag-keys", nargs="+", default=[], metavar="TAG_NAME",
+                    help="Use the most recent AMI with these tag names")
 parser.add_argument("--ubuntu-linux-ami", action="store_true", help="Use the most recent Ubuntu Linux LTS AMI")
 parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux 2 AMI")
 parser.add_argument("--spot", action="store_true",
@@ -266,9 +271,11 @@ parser.add_argument("--security-groups", nargs="+", metavar="SECURITY_GROUP")
 parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1),
                     help="Tags to apply to launched instances.")
 parser.add_argument("--wait-for-ssh", action="store_true",
-                    help="Wait for launched instance to begin accepting SSH connections. Security groups and NACLs must permit SSH from launching host.")  # noqa
+                    help=("Wait for launched instance to begin accepting SSH connections. "
+                          "Security groups and NACLs must permit SSH from launching host."))
 parser.add_argument("--iam-role", default=__name__,
-                    help="Pass this IAM role to the launched instance through an instance profile. Role credentials will become available in the instance metadata.")  # noqa
+                    help=("Pass this IAM role to the launched instance through an instance profile. "
+                          "Role credentials will become available in the instance metadata."))
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
 parser.add_argument("--cloud-config-data", type=json.loads)

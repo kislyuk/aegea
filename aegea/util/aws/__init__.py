@@ -108,6 +108,7 @@ def ensure_subnet(vpc, availability_zone=None, assign_ipv6_cidr_blocks=False):
             tag_spec = dict(ResourceType="subnet", Tags=encode_tags(tags))
             subnets[az] = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az,
                                                       TagSpecifications=[tag_spec])
+            time.sleep(1)
             clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnets[az].id])
             clients.ec2.modify_subnet_attribute(SubnetId=subnets[az].id,
                                                 MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch))
@@ -269,6 +270,9 @@ def add_tags(resource, dry_run=False, **tags):
 def filter_by_tags(collection, **tags):
     return collection.filter(Filters=[dict(Name="tag:" + k, Values=[v]) for k, v in tags.items()])
 
+def filter_by_tag_keys(collection, *tag_keys):
+    return collection.filter(Filters=[dict(Name="tag-key", Values=[k]) for k in tag_keys])
+
 def resolve_instance_id(name):
     filter_name = "dns-name" if name.startswith("ec2") and name.endswith("compute.amazonaws.com") else "tag:Name"
     if name.startswith("i-"):
@@ -311,7 +315,7 @@ def expect_error_codes(exception, *codes):
     if getattr(exception, "response", None) and exception.response.get("Error", {}).get("Code", {}) not in codes:
         raise
 
-def resolve_ami(ami=None, arch="x86_64", tags=frozenset()):
+def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset()):
     """
     Find an AMI by ID, name, or tags.
     - If an ID is given, it is returned with no validation; otherwise, selects the most recent AMI from:
@@ -331,6 +335,8 @@ def resolve_ami(ami=None, arch="x86_64", tags=frozenset()):
         all_amis = resources.ec2.images.filter(**filters)
         if tags:
             all_amis = filter_by_tags(all_amis, **tags)
+        if tag_keys:
+            all_amis = filter_by_tag_keys(all_amis, *tag_keys)
 
         current_user_amis = all_amis.filter(Filters=[dict(Name="tag:Owner", Values=[ARN.get_iam_username()])])
         amis = sorted(current_user_amis, key=lambda x: x.creation_date)
