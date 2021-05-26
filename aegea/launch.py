@@ -129,7 +129,7 @@ def launch(args):
                 break
         else:
             create_efs_args = ["aegea_home", "--tags", "mountpoint=/home", "managedBy=aegea"]
-            create_efs(parser_create_efs.parse_args(create_efs_args))
+            create_efs(parser_create_efs.parse_args(create_efs_args), vpc=vpc)
         security_groups.append(resolve_security_group(efs_security_group_name, vpc))
 
     ssh_host_key = new_ssh_key()

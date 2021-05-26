@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os, sys, argparse, base64, socket
 
-from . import register_parser
+from . import register_parser, logger
 from .ls import register_listing_parser
 from .util.printing import page_output, tabulate
 from .util.aws import clients, ensure_vpc, encode_tags, make_waiter, ensure_security_group, resolve_security_group
@@ -30,8 +30,9 @@ def ls(args):
 parser = register_listing_parser(ls, parent=efs_parser, help="List EFS filesystems")
 parser.add_argument("--mount-target-columns", nargs="+")
 
-def create(args):
-    vpc = ensure_vpc()
+def create(args, vpc=None):
+    if vpc is None:
+        vpc = ensure_vpc()
     if args.security_groups is None:
         args.security_groups = [__name__]
         ensure_security_group(__name__, vpc, tcp_ingress=[dict(port=socket.getservbyname("nfs"),
@@ -45,6 +46,7 @@ def create(args):
     if args.throughput_mode == "provisioned":
         create_file_system_args.update(ProvisionedThroughputInMibps=args.provisioned_throughput_in_mibps)
     fs = clients.efs.create_file_system(**create_file_system_args)
+    logger.info("Created EFS filesystem %s", fs)
     waiter = make_waiter(clients.efs.describe_file_systems, "FileSystems[].LifeCycleState", "available", "pathAny")
     waiter.wait(FileSystemId=fs["FileSystemId"])
     security_groups = [resolve_security_group(g, vpc).id for g in args.security_groups]
