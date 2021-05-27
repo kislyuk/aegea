@@ -77,7 +77,7 @@ def resolve_instance_public_dns(name):
 
 def get_user_info():
     res = clients.sts.get_caller_identity()
-    iam_username = ARN(res["Arn"]).resource.split("/")[-1]
+    iam_username = ARN(res["Arn"]).resource.split("/")[1]
     linux_username, at, domain = iam_username.partition("@")
     iam_user_id = res["UserId"]
     iam_user_id, colon, session = iam_user_id.partition(":")
