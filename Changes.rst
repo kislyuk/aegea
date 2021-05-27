@@ -1,3 +1,12 @@
+Changes for v3.8.0 (2021-05-27)
+===============================
+
+-  launch: use cloudinit to provision current user by default
+
+-  ssh: use ec2-instance-connect, unbundle keymaker
+
+-  Avoid using non-aegea AMIs by default
+
 Changes for v3.7.3 (2021-05-17)
 ===============================
 
