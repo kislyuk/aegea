@@ -24,7 +24,6 @@ setuptools.setup(
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
         "tweak >= 1.0.3, < 2",
-        "keymaker >= 1.1.0, < 2",
         "pyyaml >= 3.12, < 6",
         "python-dateutil >= 2.6.1, < 3",
         "babel >= 2.4.0, < 3",
