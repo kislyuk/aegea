@@ -30,6 +30,7 @@ import yaml
 
 from . import register_parser, logger, config
 from .efs import create as create_efs, parser_create as parser_create_efs, __name__ as efs_security_group_name
+from .ssh import get_user_info
 from .util import wait_for_port, validate_hostname, paginate
 from .util.cloudinit import get_user_data
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group,
@@ -47,13 +48,12 @@ def get_spot_bid_price(instance_type, ondemand_multiplier=1.2):
     ondemand_price = get_ondemand_price_usd(clients.ec2.meta.region_name, instance_type)
     return float(ondemand_price) * ondemand_multiplier
 
-def get_startup_commands(args, username):
+def get_startup_commands(args):
     hostname = ".".join([args.hostname, config.dns.private_zone.rstrip(".")]) if args.use_dns else args.hostname
     return [
         "hostnamectl set-hostname " + hostname,
         "service awslogs restart",
         "echo tsc > /sys/devices/system/clocksource/clocksource0/current_clocksource",
-        "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no {}@localhost -N || true".format(username)
     ] + args.commands
 
 def get_ssh_ca_keys(bless_config):
@@ -80,6 +80,7 @@ def launch(args):
         dns_zone = DNSZone()
     ssh_key_name = ensure_ssh_key(name=args.ssh_key_name, base_name=__name__,
                                   verify_pem_file=args.verify_ssh_key_pem_file)
+    user_info = get_user_info()
     # TODO: move all account init checks into init helper with region-specific semaphore on s3
     try:
         ensure_log_group("syslog")
@@ -134,17 +135,22 @@ def launch(args):
 
     ssh_host_key = new_ssh_key()
     user_data_args = dict(host_key=ssh_host_key,
-                          commands=get_startup_commands(args, ARN.get_iam_username()),
+                          commands=get_startup_commands(args),
                           packages=args.packages,
                           storage=args.storage)
-    if args.bless_config:
+    if args.provision_user:
+        user_data_args["provision_users"] = [dict(name=user_info["linux_username"],
+                                                  uid=user_info["linux_user_id"],
+                                                  sudo="ALL=(ALL) NOPASSWD:ALL",
+                                                  shell="/bin/bash")]
+    elif args.bless_config:
         with open(args.bless_config) as fh:
             bless_config = yaml.safe_load(fh)
         user_data_args["ssh_ca_keys"] = get_ssh_ca_keys(bless_config)
         user_data_args["provision_users"] = bless_config["client_config"]["remote_users"]
 
     hkl = hostkey_line(hostnames=[], key=ssh_host_key).strip()
-    instance_tags = dict(Name=args.hostname, Owner=ARN.get_iam_username(),
+    instance_tags = dict(Name=args.hostname, Owner=user_info["iam_username"],
                          SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
                          OwnerSSHKeyName=ssh_key_name, **dict(args.tags))
     user_data_args.update(dict(args.cloud_config_data))
@@ -165,7 +171,7 @@ def launch(args):
     if args.availability_zone:
         launch_spec["Placement"] = dict(AvailabilityZone=args.availability_zone)
     if args.client_token is None:
-        args.client_token = get_client_token(ARN.get_iam_username(), __name__)
+        args.client_token = get_client_token(user_info["iam_username"], __name__)
     try:
         if args.spot:
             launch_spec["UserData"] = base64.b64encode(launch_spec["UserData"]).decode()
@@ -246,6 +252,7 @@ parser.add_argument("--commands", nargs="+", metavar="COMMAND", help="Commands t
 parser.add_argument("--packages", nargs="+", metavar="PACKAGE", help="APT packages to install on host upon startup")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
+parser.add_argument("--no-provision-user", dest="provision_user", action="store_false")
 parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
                     help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
 parser.add_argument("--ami", help="AMI to use for the instance. Default: " + resolve_ami.__doc__)  # type: ignore

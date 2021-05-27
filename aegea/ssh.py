@@ -17,7 +17,7 @@ YAML file with the format described in
 https://github.com/chanzuckerberg/blessclient/blob/master/examples/config.yml.
 """
 
-import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess
+import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess, hashlib
 
 import boto3, yaml
 
@@ -75,11 +75,15 @@ def resolve_instance_public_dns(name):
         raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
     return instance.public_dns_name
 
-def get_linux_username():
-    username = ARN.get_iam_username()
-    assert username != "unknown"
-    username, at, domain = username.partition("@")
-    return username
+def get_user_info():
+    res = clients.sts.get_caller_identity()
+    iam_username = ARN(res["Arn"]).resource.split("/")[-1]
+    linux_username, at, domain = iam_username.partition("@")
+    iam_user_id = res["UserId"]
+    iam_user_id, colon, session = iam_user_id.partition(":")
+    user_id_bytes = hashlib.sha256(iam_user_id.encode()).digest()[-2:]
+    linux_user_id = str(2000 + (int.from_bytes(user_id_bytes, byteorder=sys.byteorder) // 2))
+    return dict(iam_username=iam_username, linux_username=linux_username, linux_user_id=linux_user_id)
 
 def get_kms_auth_token(session, bless_config, lambda_regional_config):
     logger.info("Requesting new KMS auth token in %s", lambda_regional_config["aws_region"])
@@ -193,7 +197,7 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
         if get_instance(hostname).key_name is not None:
             add_ssh_key_to_agent(get_instance(hostname).key_name)
         if not username:
-            username = get_linux_username()
+            username = get_user_info()["linux_username"]
         save_instance_public_key(hostname, use_ssm=use_ssm)
         if use_ec2_instance_connect:
             ssh_public_key = get_ssh_id()

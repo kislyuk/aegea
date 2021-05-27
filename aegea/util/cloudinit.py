@@ -54,6 +54,10 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
 
 def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
                   mime_multipart_archive=False, ssh_ca_keys=None, provision_users=None, **kwargs):
+    """
+    provision_users can be either a list of Linux usernames or a list of dicts as described in
+    https://cloudinit.readthedocs.io/en/latest/topics/modules.html#module-cloudinit.config.cc_users_groups
+    """
     cloud_config_data = OrderedDict()  # type: OrderedDict[str, Any]
     cloud_config_data["bootcmd"] = [
         "for d in /dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol?????????????????; do "
@@ -77,10 +81,12 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
                                            "(echo 'TrustedUserCAKeys /etc/ssh/sshd_ca.pem' >> /etc/ssh/sshd_config;"
                                            " service sshd reload)")
     if provision_users:
-        # TODO: UIDs should be deterministic
-        # uid_bytes = hashlib.sha256(username.encode()).digest()[-2:]
-        # uid = 2000 + (int.from_bytes(uid_bytes, byteorder=sys.byteorder) // 2)
-        cloud_config_data["users"] = [dict(name=u, gecos="", sudo="ALL=(ALL) NOPASSWD:ALL") for u in provision_users]
+        cloud_config_data["users"] = []
+        for user in provision_users:
+            if isinstance(user, dict):
+                cloud_config_data["users"].append(user)
+            else:
+                cloud_config_data["users"].append(dict(name=user, gecos="", sudo="ALL=(ALL) NOPASSWD:ALL"))
     for key in sorted(kwargs):
         cloud_config_data[key] = kwargs[key]
     if host_key is not None:
