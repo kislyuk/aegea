@@ -1,3 +1,8 @@
+Changes for v3.8.1 (2021-05-27)
+===============================
+
+-  Use correct ARN resource element for principal name
+
 Changes for v3.8.0 (2021-05-27)
 ===============================
 
