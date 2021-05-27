@@ -1,12 +1,9 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import os, sys, binascii
+import os, sys, binascii, subprocess
 
 from botocore.exceptions import ClientError
 
 from .. import logger
 from .aws import resources, expect_error_codes
-from .compat import subprocess, makedirs
 
 def new_ssh_key(bits=2048):
     from paramiko import RSAKey
@@ -22,6 +19,10 @@ def key_fingerprint(key):
 def get_ssh_key_path(name):
     return os.path.expanduser("~/.ssh/{}.pem".format(name))
 
+def get_ssh_id():
+    for line in subprocess.check_output(["ssh-add", "-L"]).decode().splitlines():
+        return line
+
 def ensure_local_ssh_key(name):
     from paramiko import RSAKey
     if os.path.exists(get_ssh_key_path(name)):
@@ -29,7 +30,7 @@ def ensure_local_ssh_key(name):
     else:
         logger.info("Creating key pair %s", name)
         ssh_key = new_ssh_key()
-        makedirs(os.path.dirname(get_ssh_key_path(name)), exist_ok=True)
+        os.makedirs(os.path.dirname(get_ssh_key_path(name)), exist_ok=True)
         ssh_key.write_private_key_file(get_ssh_key_path(name))
     return ssh_key
 

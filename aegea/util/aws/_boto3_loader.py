@@ -26,6 +26,6 @@ class Loader:
             else:
                 import boto3
                 factory = getattr(boto3, self.factory)
-                self.cache[self.factory][attr] = factory(attr,
+                self.cache[self.factory][attr] = factory(attr.replace("_", "-"),
                                                          **self.client_kwargs.get(attr, self.client_kwargs["default"]))
         return self.cache[self.factory][attr]

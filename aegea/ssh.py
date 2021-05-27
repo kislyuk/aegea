@@ -24,7 +24,7 @@ import boto3, yaml
 from . import register_parser, logger
 from .util.aws import resolve_instance_id, resources, clients, ARN
 from .util.crypto import (add_ssh_host_key_to_known_hosts, ensure_local_ssh_key, get_public_key_from_pair,
-                          add_ssh_key_to_agent, get_ssh_key_path)
+                          add_ssh_key_to_agent, get_ssh_key_path, get_ssh_id)
 from .util.printing import BOLD
 from .util.exceptions import AegeaException
 from .util.compat import lru_cache
@@ -167,7 +167,7 @@ def match_instance_to_bastion(instance, bastions):
                 return bastion_config
 
 def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True,
-                          use_ssm=True):
+                          use_ssm=True, use_ec2_instance_connect=True):
     if bless_config_filename:
         with open(bless_config_filename) as fh:
             bless_config = yaml.safe_load(fh)
@@ -195,6 +195,15 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
         if not username:
             username = get_linux_username()
         save_instance_public_key(hostname, use_ssm=use_ssm)
+        if use_ec2_instance_connect:
+            ssh_public_key = get_ssh_id()
+            logger.info("Sending SSH public key %s for %s to %s", ssh_public_key.split()[-1], username, hostname)
+            clients.ec2_instance_connect.send_ssh_public_key(
+                InstanceId=get_instance(hostname).id,
+                InstanceOSUser=username,
+                SSHPublicKey=ssh_public_key,
+                AvailabilityZone=get_instance(hostname).subnet.availability_zone
+            )
         return [], username + "@" + (get_instance(hostname).id if use_ssm else resolve_instance_public_dns(hostname))
 
 def init_ssm(instance_id):
@@ -213,7 +222,9 @@ def ssh(args):
 
     host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name,
                                                 bless_config_filename=args.bless_config,
-                                                use_kms_auth=args.use_kms_auth, use_ssm=args.use_ssm)
+                                                use_kms_auth=args.use_kms_auth,
+                                                use_ssm=args.use_ssm,
+                                                use_ec2_instance_connect=args.use_ec2_instance_connect)
     os.execvp("ssh", ["ssh"] + ssh_opts + host_opts + [hostname] + args.ssh_args)
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
@@ -223,6 +234,7 @@ ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
 ssh_parser.add_argument("--server-alive-interval", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--server-alive-count-max", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
+ssh_parser.add_argument("--no-ec2-instance-connect", action="store_false", dest="use_ec2_instance_connect")
 add_bless_and_passthrough_opts(ssh_parser, "ssh")
 
 def scp(args):
