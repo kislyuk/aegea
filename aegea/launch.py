@@ -117,6 +117,16 @@ def launch(args):
         vpc = resources.ec2.Vpc(subnet.vpc_id)
     else:
         vpc = ensure_vpc()
+        if args.spot and not args.availability_zone:
+            # Select the optimal availability zone by scanning the price history for the given spot instance type
+            best_spot_price_desc = dict(SpotPrice=sys.maxsize, AvailabilityZone=None)
+            for spot_price_desc in paginate(clients.ec2.get_paginator("describe_spot_price_history"),
+                                            InstanceTypes=[args.instance_type],
+                                            ProductDescriptions=["Linux/UNIX (Amazon VPC)", "Linux/Unix"],
+                                            StartTime=datetime.datetime.utcnow() - datetime.timedelta(hours=1)):
+                if float(spot_price_desc["SpotPrice"]) < float(best_spot_price_desc["SpotPrice"]):
+                    best_spot_price_desc = spot_price_desc
+            args.availability_zone = best_spot_price_desc["AvailabilityZone"]
         subnet = ensure_subnet(vpc, availability_zone=args.availability_zone)
 
     if args.security_groups:
@@ -156,6 +166,7 @@ def launch(args):
     user_data_args.update(dict(args.cloud_config_data))
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
+                       SubnetId=subnet.id,
                        SecurityGroupIds=[sg.id for sg in security_groups],
                        InstanceType=args.instance_type,
                        BlockDeviceMappings=get_bdm(ami=args.ami, ebs_storage=args.storage),
@@ -166,12 +177,11 @@ def launch(args):
         umbrella_policy = compose_managed_policies(args.iam_policies)
         instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
-    if not args.spot:
-        launch_spec["SubnetId"] = subnet.id
     if args.availability_zone:
         launch_spec["Placement"] = dict(AvailabilityZone=args.availability_zone)
     if args.client_token is None:
         args.client_token = get_client_token(user_info["iam_username"], __name__)
+    sir_id, instance = None, None
     try:
         if args.spot:
             launch_spec["UserData"] = base64.b64encode(launch_spec["UserData"]).decode()
@@ -225,6 +235,11 @@ def launch(args):
             instances = resources.ec2.create_instances(MinCount=1, MaxCount=1, ClientToken=args.client_token,
                                                        DryRun=args.dry_run, **launch_spec)
             instance = instances[0]
+    except KeyboardInterrupt:
+        if sir_id is not None and instance is None:
+            logger.error("Canceling spot instance request %s", sir_id)
+            clients.ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[sir_id])
+        raise
     except ClientError as e:
         expect_error_codes(e, "DryRunOperation")
         logger.info("Dry run succeeded")
