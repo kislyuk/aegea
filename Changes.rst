@@ -1,3 +1,8 @@
+Changes for v3.8.2 (2021-06-06)
+===============================
+
+launch: select subnet for spot instances
+
 Changes for v3.8.1 (2021-05-27)
 ===============================
 
