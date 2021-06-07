@@ -31,6 +31,8 @@ jobs:
     - name: Lint
       if: ${{matrix.python-version == '3.8'}}
       run: make lint
+    - name: Stagger tests to avoid throttling errors
+      run: python3 -c 'import sys, time, hashlib; time.sleep(int.from_bytes(hashlib.md5(sys.version.encode()).digest(), sys.byteorder) % 16)'
     - name: Test
       run: |
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
