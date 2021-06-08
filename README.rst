@@ -48,6 +48,12 @@ Below are some highlights from Aegea's suite of commands. Run ``aegea --help`` t
 | `aegea secrets`            | List and manage secrets stored in AWS Secrets Manager                                   |
 +----------------------------+-----------------------------------------------------------------------------------------+
 
+Aegea Launch
+------------
+The ``aegea launch`` command launches EC2 instances. It has integrated support for AWS SSM/EC2 Instance Connect, runtime
+cloud-init configuration, automatic location of Aegea-built AMIs or up-to-date Ubuntu or Amazon Linux AMIs, automatic
+storage configuration, and other options.
+
 Aegea SSH
 ---------
 The ``aegea ssh`` command (and its variant ``aegea scp``) is an SSH configuration wrapper that integrates with the
@@ -58,11 +64,16 @@ pre-fetches their public keys without the Trust-On-First-Use requirement. It als
 `Bless <https://github.com/Netflix/bless>`_ package using the
 `blessclient <https://github.com/chanzuckerberg/blessclient>`_ configuration convention.
 
-Aegea Launch
-------------
-The ``aegea launch`` command launches EC2 instances. It has integrated support for Bless as well as DNS, runtime
-cloud-init configuration, automatic location of Aegea-built AMIs or up-to-date Ubuntu or Amazon Linux AMIs, automatic
-storage configuration, and other options.
+Visual Studio Code Remote Development integration
+'''''''''''''''''''''''''''''''''''''''''''''''''
+`Visual Studio Code <https://code.visualstudio.com/>`_ provides a
+`remote development extension pack <https://code.visualstudio.com/docs/remote/remote-overview>`_ which allows your
+VSCode IDE to connect remotely to AWS instances. To use VSCode with aegea ssh, open the Remote.SSH plugin settings
+(command palette > Remote-SSH: Settings) and enter the path to the ``aegea-ssh`` executable under the "Remote.SSH: Path"
+setting (for example, ``/usr/local/bin/aegea-ssh``). After doing this, you can use the "Remote-SSH: Connect to Host"
+palette command to connect to any aegea-launched instance by name or ID (for example, ``aegea launch my-test-instance``
+followed by entering **my-test-instance** in the **Connect to Host** dialog). Note that VSCode will use the default
+AWS CLI profile for authentication.
 
 Aegea Batch
 -----------
