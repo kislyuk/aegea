@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+import os, sys, logging, pkgutil, importlib, subprocess
+
+logging.basicConfig(level=logging.ERROR)
+logging.getLogger("botocore.vendored.requests").setLevel(logging.ERROR)
+
+import aegea  # noqa
+
+for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
+    importlib.import_module((aegea.__package__ or "aegea") + "." + modname)
+
+if len(sys.argv) == 2 and sys.argv[-1] == "-V":
+    subprocess.call(["ssh", "-V"])
+    sys.argv[-1] = "--version"
+else:
+    sys.argv.insert(1, "ssh")
+
+aegea.main()
