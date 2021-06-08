@@ -1,3 +1,14 @@
+Changes for v3.8.3 (2021-06-08)
+===============================
+
+-  ssh: print legible help when instance is not running
+
+-  Add autoprovisioned user to docker group
+
+-  Add aegea-ssh shim for vscode
+
+-  Fix logic error in set_aws_profile
+
 Changes for v3.8.2 (2021-06-06)
 ===============================
 
