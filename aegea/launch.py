@@ -152,6 +152,7 @@ def launch(args):
         user_data_args["provision_users"] = [dict(name=user_info["linux_username"],
                                                   uid=user_info["linux_user_id"],
                                                   sudo="ALL=(ALL) NOPASSWD:ALL",
+                                                  groups="docker",
                                                   shell="/bin/bash")]
     elif args.bless_config:
         with open(args.bless_config) as fh:
