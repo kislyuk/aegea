@@ -172,6 +172,10 @@ def match_instance_to_bastion(instance, bastions):
 
 def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True,
                           use_ssm=True, use_ec2_instance_connect=True):
+    instance = get_instance(hostname)
+    if not getattr(get_instance(hostname), "subnet", None):
+        msg = "Unable to resolve subnet for {} (state: {})"
+        raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
     if bless_config_filename:
         with open(bless_config_filename) as fh:
             bless_config = yaml.safe_load(fh)
@@ -179,7 +183,6 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
                               bless_config=bless_config,
                               use_kms_auth=use_kms_auth)
         add_ssh_key_to_agent(ssh_key_name)
-        instance = get_instance(hostname)
         bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
         if not username:
             username = bastion_config["user"]
@@ -194,8 +197,8 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
         else:
             raise AegeaException("No bastion host or public route found for {}".format(instance))
     else:
-        if get_instance(hostname).key_name is not None:
-            add_ssh_key_to_agent(get_instance(hostname).key_name)
+        if instance.key_name is not None:
+            add_ssh_key_to_agent(instance.key_name)
         if not username:
             username = get_user_info()["linux_username"]
         save_instance_public_key(hostname, use_ssm=use_ssm)
@@ -203,12 +206,12 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
             ssh_public_key = get_ssh_id()
             logger.info("Sending SSH public key %s for %s to %s", ssh_public_key.split()[-1], username, hostname)
             clients.ec2_instance_connect.send_ssh_public_key(
-                InstanceId=get_instance(hostname).id,
+                InstanceId=instance.id,
                 InstanceOSUser=username,
                 SSHPublicKey=ssh_public_key,
-                AvailabilityZone=get_instance(hostname).subnet.availability_zone
+                AvailabilityZone=instance.subnet.availability_zone
             )
-        return [], username + "@" + (get_instance(hostname).id if use_ssm else resolve_instance_public_dns(hostname))
+        return [], username + "@" + (instance.id if use_ssm else resolve_instance_public_dns(hostname))
 
 def init_ssm(instance_id):
     ssm_plugin_path = ensure_session_manager_plugin()
