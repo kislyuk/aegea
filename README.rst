@@ -57,12 +57,11 @@ storage configuration, and other options.
 Aegea SSH
 ---------
 The ``aegea ssh`` command (and its variant ``aegea scp``) is an SSH configuration wrapper that integrates with the
-`AWS Systems Manager <https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html>`_ to provide
-SSH connectivity to your instances without opening any inbound ports (if your instance OS is not configured with SSM,
-use ``aegea ssh --no-ssm`` to open a direct connection). ``aegea ssh`` securely resolves instance addresses by name and
-pre-fetches their public keys without the Trust-On-First-Use requirement. It also optionally integrates with the
-`Bless <https://github.com/Netflix/bless>`_ package using the
-`blessclient <https://github.com/chanzuckerberg/blessclient>`_ configuration convention.
+`AWS Systems Manager <https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html>`_ and
+`EC2 Instance Connect <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Connect-using-EC2-Instance-Connect.html>`_
+to provide SSH connectivity to your instances without opening any inbound ports (if your instance OS is not configured
+with SSM, use ``aegea ssh --no-ssm`` to open a direct connection). ``aegea ssh`` securely resolves instance addresses by
+name and pre-fetches their public keys without the Trust-On-First-Use requirement.
 
 Visual Studio Code Remote Development integration
 '''''''''''''''''''''''''''''''''''''''''''''''''
