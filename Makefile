@@ -13,7 +13,7 @@ aegea/version.py: setup.py
 	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
-	python3 -m pip install coverage flake8 mypy
+	python3 -m pip install coverage flake8 mypy types-python-dateutil types-requests types-PyYAML
 
 lint: test_deps
 	flake8 $$(python3 setup.py --name)
