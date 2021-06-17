@@ -31,13 +31,6 @@ setuptools.setup(
         "uritemplate >= 3.0.0, < 4",
         "chalice >= 1.21.7, < 2"
     ],
-    extras_require={
-        ':python_version == "2.7"': [
-            "enum34 >= 1.1.6, < 2",
-            "ipaddress >= 1.0.19, < 2",
-            "subprocess32 >= 3.2.7, < 4"
-        ]
-    },
     tests_require=[
         "coverage",
         "flake8",
