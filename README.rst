@@ -12,7 +12,7 @@ Installation
 ~~~~~~~~~~~~
 ::
 
-   pip3 install aegea
+   pip3 install aegea awscli
 
 Run ``aws configure`` to configure `IAM <https://aws.amazon.com/iam/>`_ access credentials that will be used by the
 ``aws`` and ``aegea`` commands. You can create a new IAM key at https://console.aws.amazon.com/iam/home#/users. See the
