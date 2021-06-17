@@ -312,5 +312,9 @@ class TestAegea(unittest.TestCase):
         for submodule in private_submodules("git@github.com:ansible/ansible.git"):
             print(submodule)
 
+    def test_ssh_utils(self):
+        from aegea.util.aws.ssm import ensure_session_manager_plugin
+        ensure_session_manager_plugin()
+
 if __name__ == '__main__':
     unittest.main()
