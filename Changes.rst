@@ -1,3 +1,10 @@
+Changes for v3.8.4 (2021-06-17)
+===============================
+
+-  aegea ssh: Restore python 3.6 compatibility
+
+-  Documentation improvements
+
 Changes for v3.8.3 (2021-06-08)
 ===============================
 
