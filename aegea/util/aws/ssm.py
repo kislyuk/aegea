@@ -44,7 +44,7 @@ def ensure_session_manager_plugin():
         target_path = os.path.join(session_manager_dir, "session-manager-plugin")
         if platform.system() == "Darwin":
             download_session_manager_plugin_macos(target_path=target_path)
-        elif "Ubuntu" in subprocess.run(["uname", "-a"], capture_output=True).stdout.decode():  # type: ignore
+        elif "Ubuntu" in subprocess.run(["uname", "-a"], stdout=subprocess.PIPE).stdout.decode():  # type: ignore
             download_session_manager_plugin_linux(target_path=target_path)
         else:
             download_session_manager_plugin_linux(target_path=target_path, pkg_format="rpm")
