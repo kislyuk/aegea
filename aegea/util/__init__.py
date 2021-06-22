@@ -93,9 +93,9 @@ class Timestamp(datetime):
             logger.debug("Discarding timestamp %s %s precision", timestamp, ", ".join(cls._precision[precision_source]))
         return timestamp.replace(**cls._precision.get(precision_source, dict(microsecond=0)))
 
-def add_time_bound_args(p, snap=0):
+def add_time_bound_args(p, snap=0, start="-7d"):
     t = partial(Timestamp, snap=snap)
-    p.add_argument("--start-time", type=t, default=Timestamp("-7d", snap=snap), help=Timestamp.__doc__, metavar="START")
+    p.add_argument("--start-time", type=t, default=Timestamp(start, snap=snap), help=Timestamp.__doc__, metavar="START")
     p.add_argument("--end-time", type=t, help=Timestamp.__doc__, metavar="END")
 
 class hashabledict(dict):

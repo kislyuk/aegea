@@ -65,6 +65,7 @@ def export_log_files(args):
                 res = clients.logs.describe_export_tasks(taskId=task_desc["taskId"])
                 assert len(res["exportTasks"]) == 1
                 task_desc = res["exportTasks"][0]
+                task_desc["from"], task_desc["to"] = Timestamp(task_desc["from"]), Timestamp(task_desc["to"])
                 if task_desc["status"]["code"] in {"CANCELLED", "FAILED"}:
                     raise Exception("Log export task failed: " + task_desc["status"]["message"])
                 msg = "log export task: {logGroupName} {from}..{to} -> s3://{destination}/{destinationPrefix} %s"

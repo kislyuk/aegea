@@ -74,7 +74,7 @@ logs_parser.add_argument("--no-export", action="store_false", dest="export")
 logs_parser.add_argument("--print-s3-urls", action="store_true", help="With S3 log export, print S3 URLs, not contents")
 logs_parser.add_argument("log_group", nargs="?", help="CloudWatch log group").completer = log_group_completer
 logs_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
-add_time_bound_args(logs_parser, snap=2)
+add_time_bound_args(logs_parser, snap=2, start="-24h")
 
 def filter(args):
     filter_args = dict(logGroupName=args.log_group)
