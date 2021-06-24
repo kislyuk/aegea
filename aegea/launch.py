@@ -42,7 +42,7 @@ from .util.aws.spot import SpotFleetBuilder
 from .util.aws.iam import ensure_instance_profile, compose_managed_policies
 from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
 from .util.exceptions import AegeaException
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, WaiterError
 
 def get_spot_bid_price(instance_type, ondemand_multiplier=1.2):
     ondemand_price = get_ondemand_price_usd(clients.ec2.meta.region_name, instance_type)
@@ -236,7 +236,7 @@ def launch(args):
             instances = resources.ec2.create_instances(MinCount=1, MaxCount=1, ClientToken=args.client_token,
                                                        DryRun=args.dry_run, **launch_spec)
             instance = instances[0]
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, WaiterError):
         if sir_id is not None and instance is None:
             logger.error("Canceling spot instance request %s", sir_id)
             clients.ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[sir_id])
