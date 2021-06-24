@@ -1,4 +1,4 @@
-import os, sys, io, json, base64, hashlib, argparse
+import os, sys, io, json, base64, hashlib, argparse, tempfile, shutil
 from typing import Dict, Any
 
 import yaml
@@ -239,9 +239,12 @@ def ensure_lambda_helper():
         orig_argv = sys.argv
         orig_wd = os.getcwd()
         try:
-            os.chdir(os.path.join(os.path.dirname(__file__), "batch_events_lambda"))
-            sys.argv = ["chalice", "deploy", "--no-autogen-policy"]
-            chalice.cli.main()
+            with tempfile.TemporaryDirectory(prefix=__name__) as tempdir:
+                tempdir = os.path.join(tempdir, "batch_events_lambda")
+                shutil.copytree(os.path.join(os.path.dirname(__file__), "batch_events_lambda"), tempdir)
+                os.chdir(tempdir)
+                sys.argv = ["chalice", "deploy", "--no-autogen-policy"]
+                chalice.cli.main()
         except SystemExit:
             pass
         finally:
