@@ -11,7 +11,8 @@ import os, sys, argparse, base64, socket
 from . import register_parser, logger
 from .ls import register_listing_parser
 from .util.printing import page_output, tabulate
-from .util.aws import clients, ensure_vpc, encode_tags, make_waiter, ensure_security_group, resolve_security_group
+from .util.aws import (clients, resources, ensure_vpc, encode_tags, make_waiter, ensure_security_group,
+                       resolve_security_group)
 
 def efs(args):
     efs_parser.print_help()
@@ -30,9 +31,8 @@ def ls(args):
 parser = register_listing_parser(ls, parent=efs_parser, help="List EFS filesystems")
 parser.add_argument("--mount-target-columns", nargs="+")
 
-def create(args, vpc=None):
-    if vpc is None:
-        vpc = ensure_vpc()
+def create(args):
+    vpc = resources.ec2.Vpc(args.vpc) if args.vpc else ensure_vpc()
     if args.security_groups is None:
         args.security_groups = [__name__]
         ensure_security_group(__name__, vpc, tcp_ingress=[dict(port=socket.getservbyname("nfs"),
@@ -46,14 +46,15 @@ def create(args, vpc=None):
     if args.throughput_mode == "provisioned":
         create_file_system_args.update(ProvisionedThroughputInMibps=args.provisioned_throughput_in_mibps)
     fs = clients.efs.create_file_system(**create_file_system_args)
-    logger.info("Created EFS filesystem %s", fs)
+    logger.info("Created EFS filesystem %s (%s)", fs["Name"], fs["FileSystemId"])
     waiter = make_waiter(clients.efs.describe_file_systems, "FileSystems[].LifeCycleState", "available", "pathAny")
     waiter.wait(FileSystemId=fs["FileSystemId"])
     security_groups = [resolve_security_group(g, vpc).id for g in args.security_groups]
     for subnet in vpc.subnets.all():
-        clients.efs.create_mount_target(FileSystemId=fs["FileSystemId"],
-                                        SubnetId=subnet.id,
-                                        SecurityGroups=security_groups)
+        mount_target = clients.efs.create_mount_target(FileSystemId=fs["FileSystemId"],
+                                                       SubnetId=subnet.id,
+                                                       SecurityGroups=security_groups)
+        logger.info("Created EFS mount target %s in %s", mount_target["MountTargetId"], mount_target["SubnetId"])
     return fs
 
 parser_create = register_parser(create, parent=efs_parser, help="Create an EFS filesystem")
@@ -63,3 +64,4 @@ parser_create.add_argument("--throughput-mode", choices={"bursting", "provisione
 parser_create.add_argument("--provisioned-throughput-in-mibps", type=float)
 parser_create.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE")
 parser_create.add_argument("--security-groups", nargs="+")
+parser_create.add_argument("--vpc", metavar="VPC_ID")
