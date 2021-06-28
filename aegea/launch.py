@@ -74,12 +74,12 @@ def infer_architecture(instance_type):
     return "x86_64"
 
 def ensure_efs_home(subnet):
-    for filesystem in clients.efs.describe_file_systems()["FileSystems"]:
-        if {"Key": "mountpoint", "Value": "/home"} in filesystem["Tags"]:
-            for mount_target in paginate(clients.efs.get_paginator('describe_mount_targets'),
-                                         FileSystemId=filesystem["FileSystemId"]):
-                if mount_target["SubnetId"] == subnet.id:
-                    return filesystem
+    for fs in clients.efs.describe_file_systems()["FileSystems"]:
+        if {"Key": "mountpoint", "Value": "/home"} in fs["Tags"]:
+            for mt in paginate(clients.efs.get_paginator("describe_mount_targets"), FileSystemId=fs["FileSystemId"]):
+                if mt["VpcId"] == subnet.vpc_id and mt["AvailabilityZoneName"] == subnet.availability_zone:
+                    logger.info("Using %s for EFS home", fs["FileSystemId"])
+                    return fs
     create_efs_args = ["aegea_home", "--tags", "mountpoint=/home", "managedBy=aegea", "--vpc", subnet.vpc_id]
     return create_efs(parser_create_efs.parse_args(create_efs_args))
 
