@@ -1,3 +1,16 @@
+Changes for v3.8.5 (2021-06-28)
+===============================
+
+-  launch: fix logic for detection of existing EFS home
+
+-  launch: correctly handle EFS home in multiple VPCs
+
+-  launch: cancel SIR on waiter error
+
+-  batch: deploy Lambda helper from a writable location
+
+-  logs: set default log horizon to 24h
+
 Changes for v3.8.4 (2021-06-17)
 ===============================
 
