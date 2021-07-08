@@ -28,7 +28,8 @@ efs = boto3.Session(region_name=az[:-1]).client("efs")
 mountpoints = {}
 
 for filesystem in efs.describe_file_systems()["FileSystems"]:
-    mountpoint = next((_["Value"] for _ in fs["Tags"] if _["Key"] == 'mountpoint'), None)
+    mountpoint = next((_["Value"] for _ in filesystem["Tags"] if _["Key"] == 'mountpoint'), None)
+
     def accessible():
         for mt in efs.describe_mount_targets(FileSystemId=filesystem["FileSystemId"])["MountTargets"]:
             if mt["SubnetId"] == subnet_id:
@@ -60,7 +61,8 @@ rvals = collections.defaultdict(int)
 for mountpoint, proc in mount_procs.items():
     try:
         rval = proc.wait(timeout=args.timeout)
-        logger.debug("Path: %s rval: %s ismount: %s timeout: %d" % (mountpoint, rval, os.path.ismount(mountpoint), args.timeout))
+        msg = "Path: %s rval: %s ismount: %s timeout: %d"
+        logger.debug(msg, mountpoint, rval, os.path.ismount(mountpoint), args.timeout)
         if not os.path.ismount(mountpoint):
             logger.info("Mount exited with status: %d" % rvals[mountpoint])
             rvals[mountpoint] = rval

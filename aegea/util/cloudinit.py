@@ -52,7 +52,7 @@ def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
         tar.close()
         return targz.getvalue()
 
-def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=frozenset(),
+def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=None, storage=None,
                   mime_multipart_archive=False, ssh_ca_keys=None, provision_users=None, **kwargs):
     """
     provision_users can be either a list of Linux usernames or a list of dicts as described in
@@ -65,7 +65,7 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
         "[[ -e $a ]] || ln -s $d $a; "
         "done"
     ]
-    for i, (mountpoint, size_gb) in enumerate(storage.items()):
+    for i, (mountpoint, size_gb) in enumerate(storage.items() if storage else []):
         cloud_config_data.setdefault("fs_setup", [])
         cloud_config_data.setdefault("mounts", [])
         device = "/dev/xvd" + chr(ord("z") - i)
