@@ -23,7 +23,6 @@ subnet_id = get_metadata("network/interfaces/macs/{}/subnet-id".format(get_metad
 
 # session
 sts = boto3.client('sts')
-print(sys.get_caller_identity())
 efs = boto3.Session(region_name=az[:-1]).client("efs")
 
 mountpoints = {}
