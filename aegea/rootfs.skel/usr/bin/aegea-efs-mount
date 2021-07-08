@@ -19,18 +19,28 @@ def get_metadata(path):
 
 az = get_metadata("placement/availability-zone")
 services_domain = get_metadata("services/domain")
-# subnet = get_metadata("network/interfaces/macs/{}/subnet-id".format(get_metadata("mac")))
+subnet_id = get_metadata("network/interfaces/macs/{}/subnet-id".format(get_metadata("mac")))
 
+# session
+sts = boto3.client('sts')
 efs = boto3.Session(region_name=az[:-1]).client("efs")
 
 mountpoints = {}
 
 for filesystem in efs.describe_file_systems()["FileSystems"]:
-    for tag in efs.describe_tags(FileSystemId=filesystem["FileSystemId"])["Tags"]:
-        if tag["Key"] == "mountpoint":
-            mountpoints[tag["Value"]] = filesystem
-else:
+    mountpoint = next((_["Value"] for _ in fs["Tags"] if _["Key"] == 'mountpoint'), None)
+    def accessible():
+        for mt in efs.describe_mount_targets(FileSystemId=filesystem["FileSystemId"])["MountTargets"]:
+            if mt["SubnetId"] == subnet_id:
+                return True
+    if mountpoint and accessible():
+        assert mountpoint not in mountpoints
+        mountpoints[mountpoint] = filesystem
+        logger.info("Using %s for EFS %s", filesystem["FileSystemId"], mountpoint)
+
+if not mountpoints:
     logger.info("No EFS filesystems found")
+    sys.exit(-1)
 
 mount_procs = collections.OrderedDict()
 for mountpoint, filesystem in mountpoints.items():
@@ -40,28 +50,27 @@ for mountpoint, filesystem in mountpoints.items():
                                                         region=efs.meta.region_name,
                                                         domain=services_domain)
 
+    if not os.path.isdir(mountpoint):
+        os.makedirs(mountpoint)
     mount_procs[mountpoint] = subprocess.Popen(["mount", "-t", "nfs4", "-o",
                                                 "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2",
                                                 fs_url, mountpoint])
 
-rvals = {}
-for m, p in mount_procs.items():
-    rvals[m] = 1
-    if not os.path.isdir(m):
-        os.makedirs(m)
+rvals = collections.defaultdict(int)
+for mountpoint, proc in mount_procs.items():
     try:
-        if not os.path.ismount(m):
-            logger.info("Path: %s is not a mountpoint ... mounting (timeout: %d)" % (m, args.timeout))
-            rvals[m] = p.wait(timeout=args.timeout)
-            logger.info("Mount exited with status: %d" % rvals[m])
-        else:
-            rvals[m] = 0
+        rval = proc.wait(timeout=args.timeout)
+        logger.debug("Path: %s rval: %s ismount: %s timeout: %d" % (mountpoint, rval, os.path.ismount(mountpoint), args.timeout))
+        if not os.path.ismount(mountpoint):
+            logger.info("Mount exited with status: %d" % rvals[mountpoint])
+            rvals[mountpoint] = rval
     except Exception:
+        rvals[mountpoint] = 100
         logger.exception("Error while mounting EFS filesystem!")
         try:
-            p.terminate()
+            proc.terminate()
         except Exception:
             logger.exception("Caught exception terminating")
             pass
 
-exit(sum(rvals.values()))
+sys.exit(sum(rvals.values()))
