@@ -26,9 +26,11 @@ def get_bootstrap_files(args, dest="cloudinit"):
     rootfs_skel_dirs = OrderedDict() # Used as an OrderedSet, values are None
     for arg in args:
         if arg == 'auto':
-            dirs_to_scan = [__file__, '/etc/aegea/config.yml', '~/.config/aegea/config.yml']
-            dirs_to_scan.extend(os.getenv("AEGEA_CONFIG_FILE").split(':'))
-            dirs_to_scan = [os.path.dirname(os.path.expanduser(p)) for p in dirs_to_scan]
+            dirs_to_scan = []
+            dirs_to_scan.append(os.path.dirname(os.path.dirname(__file__)))
+            dirs_to_scan.extend(['/etc/aegea', '~/.config/aegea'])
+            dirs_to_scan.extend(os.path.dirname(p) for p in os.getenv("AEGEA_CONFIG_FILE").split(':'))
+            logger.info(dirs_to_scan)
             for path in dirs_to_scan:
                 path = os.path.join(path, 'rootfs.skel')
                 if os.path.isdir(path):
