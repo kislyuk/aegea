@@ -172,6 +172,7 @@ def launch(args):
                          SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
                          OwnerSSHKeyName=ssh_key_name, **dict(args.tags))
     user_data_args.update(dict(args.cloud_config_data))
+    logger.info('Using %s for storage', ['='.join(_) for _ in args.storage])
     launch_spec = dict(ImageId=args.ami,
                        KeyName=ssh_key_name,
                        SubnetId=subnet.id,

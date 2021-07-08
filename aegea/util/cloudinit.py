@@ -31,12 +31,14 @@ def get_bootstrap_files(args, dest="cloudinit"):
             dirs_to_scan.extend(['/etc/aegea', '~/.config/aegea'])
             dirs_to_scan.extend(os.path.dirname(p) for p in os.getenv("AEGEA_CONFIG_FILE").split(':'))
             for path in dirs_to_scan:
-                path = os.path.join(path, 'rootfs.skel')
+                path = os.path.join(os.path.expanduser(path), 'rootfs.skel')
                 if os.path.isdir(path):
                     rootfs_skel_dirs[path] = None
         else:
             rootfs_skel_dirs[arg] = None
-    logger.info('Adding skel files from these paths: %s', ', '.join(rootfs_skel_dirs))
+    if rootfs_skel_dirs:
+        logger.info('Adding skel files from these paths: %s', ', '.join(rootfs_skel_dirs))
+
 
     manifest = OrderedDict()  # type: OrderedDict[str, Dict]
     targz = io.BytesIO()
