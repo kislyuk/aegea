@@ -700,6 +700,7 @@ secrets_ls:
 
 launch:
   instance_type: t3.micro
+  iam_role: aegea.launch
   tags: []
   storage: []
   commands: []

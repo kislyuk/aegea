@@ -287,7 +287,7 @@ def get_bdm(ami=None, max_devices=12, ebs_storage=frozenset()):
     # Note: d2.8xl and hs1.8xl have 24 devices
     bdm = [dict(VirtualName="ephemeral" + str(i), DeviceName="xvd" + chr(ord("b") + i)) for i in range(max_devices)]
     ebs_bdm = []  # type: List[Dict]
-    for i, (mountpoint, size_gb) in enumerate(ebs_storage):
+    for i, (mountpoint, size_gb) in enumerate(ebs_storage.items()):
         if mountpoint == "/":
             rootfs_bdm = resources.ec2.Image(ami).block_device_mappings[0]
             if "Ebs" not in rootfs_bdm or "SnapshotId" not in rootfs_bdm.get("Ebs", []):

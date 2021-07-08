@@ -84,6 +84,8 @@ def ensure_efs_home(subnet):
     return create_efs(parser_create_efs.parse_args(create_efs_args))
 
 def launch(args):
+    args.storage = dict(args.storage)  # Allow storage to be specified as either a list (argparse) or mapping (YAML)
+    args.storage = {k: str(v).rstrip("GBgb") for k, v in args.storage.items()}
     if args.spot_price or args.duration_hours or args.cores or args.min_mem_per_core_gb:
         args.spot = True
     if args.use_dns:
@@ -264,8 +266,7 @@ def launch(args):
 
 parser = register_parser(launch)
 parser.add_argument("hostname")
-parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB",
-                    type=lambda x: x.rstrip("GBgb").split("=", 1),
+parser.add_argument("--storage", nargs="+", metavar="MOUNTPOINT=SIZE_GB", type=lambda x: x.split("=", 1),
                     help="At launch time, attach EBS volume(s) of this size, format and mount them.")
 parser.add_argument("--efs-home", action="store_true",
                     help="Create and manage an EFS filesystem that the instance will use for user home directories")
@@ -301,9 +302,8 @@ parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", type=lambda x: x.
 parser.add_argument("--wait-for-ssh", action="store_true",
                     help=("Wait for launched instance to begin accepting SSH connections. "
                           "Security groups and NACLs must permit SSH from launching host."))
-parser.add_argument("--iam-role", default=__name__,
-                    help=("Pass this IAM role to the launched instance through an instance profile. "
-                          "Role credentials will become available in the instance metadata."))
+parser.add_argument("--iam-role", help=("Pass this IAM role to the launched instance through an instance profile. "
+                                        "Role credentials will become available in the instance metadata."))
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
 parser.add_argument("--cloud-config-data", type=json.loads)

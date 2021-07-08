@@ -65,7 +65,7 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
         "[[ -e $a ]] || ln -s $d $a; "
         "done"
     ]
-    for i, (mountpoint, size_gb) in enumerate(storage):
+    for i, (mountpoint, size_gb) in enumerate(storage.items()):
         cloud_config_data.setdefault("fs_setup", [])
         cloud_config_data.setdefault("mounts", [])
         device = "/dev/xvd" + chr(ord("z") - i)
