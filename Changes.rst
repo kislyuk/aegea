@@ -1,3 +1,10 @@
+Changes for v3.8.6 (2021-07-08)
+===============================
+
+-  Allow storage and iam_role to be passed via config files
+
+-  Only mount accessible efs shares (#61)
+
 Changes for v3.8.5 (2021-06-28)
 ===============================
 
