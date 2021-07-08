@@ -19,28 +19,37 @@ def add_file_to_cloudinit_manifest(src_path, path, manifest):
         except UnicodeDecodeError:
             manifest[path].update(content=base64.b64encode(gzip_compress_bytes(content)), encoding="gz+b64")
 
-def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
+def get_bootstrap_files(args, dest="cloudinit"):
+    # Create a list of rootfs_skel_dirs to build from. The arg element 'auto' is
+    # expanded to the default aegea skel as well as rootfs.skel directories in
+    # the same paths as config files.
+    rootfs_skel_dirs = OrderedDict() # Used as an OrderedSet, values are None
+    for arg in args:
+        if arg == 'auto':
+            dirs_to_scan = [__file__, '/etc/aegea/config.yml', '~/.config/aegea/config.yml']
+            dirs_to_scan.extend(os.getenv("AEGEA_CONFIG_FILE").split(':'))
+            dirs_to_scan = [os.path.dirname(os.path.expanduser(p)) for p in dirs_to_scan]
+            for path in dirs_to_scan:
+                path = os.path.join(path, 'rootfs.skel')
+                if os.path.isdir(path):
+                    rootfs_skel_dirs[path] = None
+        else:
+            rootfs_skel_dirs[arg] = None
+
     manifest = OrderedDict()  # type: OrderedDict[str, Dict]
-    aegea_conf = os.getenv("AEGEA_CONFIG_FILE")
     targz = io.BytesIO()
     tar = tarfile.open(mode="w:gz", fileobj=targz) if dest == "tarfile" else None
 
     for rootfs_skel_dir in rootfs_skel_dirs:
-        if rootfs_skel_dir == "auto":
-            fn = os.path.join(os.path.dirname(__file__), "..", "rootfs.skel")
-        elif aegea_conf:
-            # FIXME: not compatible with colon-separated AEGEA_CONFIG_FILE
-            fn = os.path.join(os.path.dirname(aegea_conf), rootfs_skel_dir)
-        elif os.path.exists(rootfs_skel_dir):
-            fn = os.path.abspath(os.path.normpath(rootfs_skel_dir))
+        if os.path.exists(rootfs_skel_dir):
+            rootfs_skel_dir = os.path.abspath(os.path.normpath(rootfs_skel_dir))
         else:
-            raise Exception("rootfs_skel directory {} not found".format(fn))
-        logger.debug("Trying rootfs.skel: %s" % fn)
-        if not os.path.exists(fn):
-            raise Exception("rootfs_skel directory {} not found".format(fn))
-        for root, dirs, files in os.walk(fn):
+            raise Exception("rootfs_skel directory {} not found".format(rootfs_skel_dir))
+        logger.debug("Trying rootfs.skel: %s" % rootfs_skel_dir)
+
+        for root, dirs, files in os.walk(rootfs_skel_dir):
             for file_ in files:
-                path = os.path.join("/", os.path.relpath(root, fn), file_)
+                path = os.path.join("/", os.path.relpath(root, rootfs_skel_dir), file_)
                 if dest == "cloudinit":
                     add_file_to_cloudinit_manifest(os.path.join(root, file_), path, manifest)
                 elif dest == "tarfile":
