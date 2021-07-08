@@ -35,6 +35,7 @@ def get_bootstrap_files(args, dest="cloudinit"):
                     rootfs_skel_dirs[path] = None
         else:
             rootfs_skel_dirs[arg] = None
+    logger.info('Adding skel files from these paths: %s', rootfs_skel_dirs.keys())
 
     manifest = OrderedDict()  # type: OrderedDict[str, Dict]
     targz = io.BytesIO()
