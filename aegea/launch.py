@@ -183,6 +183,7 @@ def launch(args):
     tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
+        logger.info("Using %s for iam_role", args.iam_role)
         umbrella_policy = compose_managed_policies(args.iam_policies)
         instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
