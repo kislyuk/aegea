@@ -706,6 +706,7 @@ launch:
   commands: []
   packages: []
   security_groups: []
+  rootfs_skel_dirs: []
   cloud_config_data: {}
   iam_policies:
     - IAMReadOnlyAccess
