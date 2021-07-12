@@ -1,20 +1,24 @@
 """
 Connect to an EC2 instance via SSH, by name or instance ID.
 
-Security groups, network ACLs, interfaces, VPC routing tables, VPC
-Internet Gateways, and internal firewalls for the instance must be
-configured to allow SSH connections.
+By default, aegea uses AWS SSM with EC2 Instance Connect to open an SSH
+connection to your instance. This means you don't have to create security group
+rules to allow inbound TCP port 22 access, nor distribute your SSH public keys
+to your instance in advance of logging in; however, you do still need to
+provision the Linux user on the instance before logging in as that user (unless
+using the default pre-provisioned ubuntu or ec2-user account).
 
-To facilitate SSH connections, ``aegea ssh`` resolves instance names
-to public DNS names assigned by AWS, and securely retrieves SSH host
-public keys from instance metadata before connecting. This avoids both
-the prompt to save the instance public key and the resulting transient
-MITM vulnerability.
+AWS SSM can be disabled using the --no-ssm option. EC2 Instance Connect can be
+disabled using the --no-ec2-instance-connect option.
 
-``aegea ssh`` also supports Bless, via the --bless-config CONFIG_FILE
-option or the BLESS_CONFIG environment variable. This should point to a
-YAML file with the format described in
-https://github.com/chanzuckerberg/blessclient/blob/master/examples/config.yml.
+To facilitate SSH connections, ``aegea ssh`` resolves instance names to public
+DNS names assigned by AWS, and securely retrieves SSH host public keys from
+instance metadata before connecting. This avoids both the prompt to save the
+instance public key and the resulting transient MITM vulnerability.
+
+Security groups, network ACLs, interfaces, VPC routing tables, VPC Internet
+Gateways, and internal firewalls for the instance must be configured to allow
+SSH connections.
 """
 
 import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess, hashlib
