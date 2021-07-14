@@ -59,6 +59,7 @@ def ensure_vpc():
             tags = dict(Name="aegea-vpc", managedBy="aegea")
             tag_spec = dict(ResourceType="vpc", Tags=encode_tags(tags))
             vpc = resources.ec2.create_vpc(CidrBlock=config.vpc.cidr[ARN.get_region()], TagSpecifications=[tag_spec])
+            time.sleep(1)
             clients.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc.id])
             vpc.modify_attribute(EnableDnsSupport=dict(Value=config.vpc.enable_dns_support))
             vpc.modify_attribute(EnableDnsHostnames=dict(Value=config.vpc.enable_dns_hostnames))
