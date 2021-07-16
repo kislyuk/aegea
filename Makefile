@@ -18,7 +18,7 @@ test_deps:
 lint: test_deps
 	flake8 $$(python3 setup.py --name)
 	flake8 --filename='*' $$(grep -r -l '/usr/bin/env python3' aegea/missions aegea/rootfs.skel scripts)
-#	mypy --check-untyped-defs --no-strict-optional $$(python3 setup.py --name)
+	mypy --check-untyped-defs --no-strict-optional $$(python3 setup.py --name)
 
 test: test_deps
 	coverage run --source=$$(python3 setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose

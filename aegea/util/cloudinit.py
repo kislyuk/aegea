@@ -23,7 +23,7 @@ def get_bootstrap_files(args, dest="cloudinit"):
     # Create a list of rootfs_skel_dirs to build from. The arg element 'auto' is
     # expanded to the default aegea skel as well as rootfs.skel directories in
     # the same paths as config files.
-    rootfs_skel_dirs = OrderedDict() # Used as an OrderedSet, values are None
+    rootfs_skel_dirs = OrderedDict()  # type: OrderedDict[str, None]
     for arg in args:
         if arg == 'auto':
             dirs_to_scan = []
