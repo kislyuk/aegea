@@ -1,0 +1,4 @@
+# This is the user configuration file for aegea (https://github.com/kislyuk/aegea).
+# For details of aegea configuration management, see https://github.com/kislyuk/aegea#configuration-management
+# For a listing of available configuration parameters that can be set here, run `aegea configure`
+# or see https://github.com/kislyuk/aegea/blob/develop/aegea/base_config.yml

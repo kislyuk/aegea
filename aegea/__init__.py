@@ -33,6 +33,10 @@ class AegeaConfig(tweak.Config):
     def user_config_dir(self):
         return os.path.join(self._user_config_home, self._name)
 
+    @property
+    def user_config_file(self):
+        return os.path.join(self.user_config_dir, "config.yml")
+
 class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
     def _get_help_string(self, action):
         default = _get_config_for_prog(self._prog).get(action.dest)
@@ -44,16 +48,15 @@ def initialize():
     global config, parser
     from .util.printing import BOLD, RED, ENDC
     config = AegeaConfig(__name__, use_yaml=True, save_on_exit=False)
-    if not os.path.exists(config.config_files[2]):
-        config_dir = os.path.dirname(os.path.abspath(config.config_files[2]))
+    if not os.path.exists(config.user_config_file):
+        config_dir = os.path.dirname(os.path.abspath(config.user_config_file))
         try:
-            os.makedirs(config_dir)
+            os.makedirs(config_dir, exist_ok=True)
+            shutil.copy(os.path.join(os.path.dirname(__file__), "user_config.yml"), config.user_config_file)
+            logger.info("Wrote new config file %s with default values", config.user_config_file)
+            config = AegeaConfig(__name__, use_yaml=True, save_on_exit=False)
         except OSError as e:
-            if not (e.errno == errno.EEXIST and os.path.isdir(config_dir)):
-                raise
-        shutil.copy(os.path.join(os.path.dirname(__file__), "user_config.yml"), config.config_files[2])
-        logger.info("Wrote new config file %s with default values", config.config_files[2])
-        config = AegeaConfig(__name__, use_yaml=True, save_on_exit=False)
+            logger.error("Error writing user config file %s: %s", config.user_config_file, e)
 
     parser = argparse.ArgumentParser(
         description="{}: {}".format(BOLD() + RED() + __name__.capitalize() + ENDC(), fill(__doc__.strip())),
