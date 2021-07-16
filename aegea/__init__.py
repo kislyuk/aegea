@@ -156,7 +156,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
                            help="When printing tables, truncate column contents to this width. Set to 0 for auto fit.")
     subparser.add_argument("--json", action="store_true",
                            help="Output tabular data as a JSON-formatted list of objects")
-    subparser.add_argument("--log-level", default=config.get("log_level"),
+    subparser.add_argument("--log-level", default=config.get("log_level"), type=str.upper,
                            help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
                            choices={logging.getLevelName(i) for i in range(10, 60, 10)})
     subparser.add_argument("--profile", help="Profile to use from the AWS CLI configuration file",

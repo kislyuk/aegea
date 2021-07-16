@@ -86,6 +86,8 @@ def ensure_efs_home(subnet):
 def launch(args):
     args.storage = dict(args.storage)  # Allow storage to be specified as either a list (argparse) or mapping (YAML)
     args.storage = {k: str(v).rstrip("GBgb") for k, v in args.storage.items()}
+    logger.debug('Using %s for storage', ', '.join('='.join(_) for _ in args.storage.items()))
+
     if args.spot_price or args.duration_hours or args.cores or args.min_mem_per_core_gb:
         args.spot = True
     if args.use_dns:
@@ -154,7 +156,8 @@ def launch(args):
     user_data_args = dict(host_key=ssh_host_key,
                           commands=get_startup_commands(args),
                           packages=args.packages,
-                          storage=args.storage)
+                          storage=args.storage,
+                          rootfs_skel_dirs=args.rootfs_skel_dirs)
     if args.provision_user:
         user_data_args["provision_users"] = [dict(name=user_info["linux_username"],
                                                   uid=user_info["linux_user_id"],
@@ -182,6 +185,7 @@ def launch(args):
     tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
+        logger.debug("Using %s for iam_role", args.iam_role)
         umbrella_policy = compose_managed_policies(args.iam_policies)
         instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
