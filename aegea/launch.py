@@ -32,7 +32,7 @@ from . import register_parser, logger, config
 from .efs import create as create_efs, parser_create as parser_create_efs, __name__ as efs_security_group_name
 from .ssh import get_user_info
 from .util import wait_for_port, validate_hostname, paginate
-from .util.cloudinit import get_user_data
+from .util.cloudinit import get_user_data, get_rootfs_skel_dirs
 from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group,
                        add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
                        locate_ami, get_ondemand_price_usd, resources, clients, ARN, instance_type_completer,
@@ -157,7 +157,7 @@ def launch(args):
                           commands=get_startup_commands(args),
                           packages=args.packages,
                           storage=args.storage,
-                          rootfs_skel_dirs=args.rootfs_skel_dirs)
+                          rootfs_skel_dirs=get_rootfs_skel_dirs(args))
     if args.provision_user:
         user_data_args["provision_users"] = [dict(name=user_info["linux_username"],
                                                   uid=user_info["linux_user_id"],

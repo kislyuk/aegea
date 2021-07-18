@@ -6,6 +6,7 @@ from io import open
 from . import register_parser, logger, config, __version__
 from .util.aws import locate_ami, add_tags, get_bdm, resolve_instance_id, resources, clients, ARN, AegeaException
 from .util.aws.ssm import run_command
+from .util.cloudinit import get_rootfs_skel_dirs
 from .util.crypto import ensure_ssh_key, get_ssh_key_path
 from .util.printing import GREEN
 from .launch import launch, parser as launch_parser
@@ -29,7 +30,7 @@ def build_ami(args):
         hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
         launch_args = launch_parser.parse_args(args=[hostname], namespace=args)
         launch_args.iam_role = args.iam_role
-        launch_args.cloud_config_data.update(rootfs_skel_dirs=args.rootfs_skel_dirs)
+        launch_args.cloud_config_data.update(rootfs_skel_dirs=get_rootfs_skel_dirs(args))
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
     sys.stderr.write("Waiting {} seconds for cloud-init ...".format(args.cloud_init_timeout_seconds))
     sys.stderr.flush()

@@ -9,7 +9,7 @@ from . import register_parser, logger, config, __version__
 from .util.aws import ARN, clients, resources, expect_error_codes
 from .util.aws.iam import ensure_iam_role, IAMPolicyBuilder
 from .util.aws.batch import bash_cmd_preamble
-from .util.cloudinit import get_bootstrap_files, encode_cloud_config_payload
+from .util.cloudinit import get_bootstrap_files, get_rootfs_skel_dirs, encode_cloud_config_payload
 from .batch import submit, submit_parser
 
 dockerfile = """
@@ -47,7 +47,7 @@ def encode_dockerfile(args):
 
 def get_cloud_config(args):
     cloud_config_data = OrderedDict(packages=args.packages,
-                                    write_files=get_bootstrap_files(args.rootfs_skel_dirs),
+                                    write_files=get_bootstrap_files(get_rootfs_skel_dirs(args)),
                                     runcmd=args.commands)
     cloud_config_data.update(dict(args.cloud_config_data))
     cloud_cfg_d = {

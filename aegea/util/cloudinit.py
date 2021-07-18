@@ -19,17 +19,17 @@ def add_file_to_cloudinit_manifest(src_path, path, manifest):
         except UnicodeDecodeError:
             manifest[path].update(content=base64.b64encode(gzip_compress_bytes(content)), encoding="gz+b64")
 
-def get_bootstrap_files(args, dest="cloudinit"):
-    # Create a list of rootfs_skel_dirs to build from. The arg element 'auto' is
-    # expanded to the default aegea skel as well as rootfs.skel directories in
+def get_rootfs_skel_dirs(args):
+    # Build a list of rootfs_skel_dirs to build from. The arg element 'auto' is
+    # expanded to the default aegea skel as well as rootfs.skel.<command> directories in
     # the same paths as config files.
     rootfs_skel_dirs = OrderedDict()  # type: OrderedDict[str, None]
-    for arg in args:
+    for arg in args.rootfs_skel_dirs:
         if arg == 'auto':
             from .. import config
             dirs_to_scan = [os.path.dirname(p) for p in config.config_files]
             for path in dirs_to_scan:
-                path = os.path.join(os.path.expanduser(path), 'rootfs.skel')
+                path = os.path.join(os.path.expanduser(path), "rootfs.skel." + args.entry_point.__name__)
                 if os.path.isdir(path):
                     rootfs_skel_dirs[path] = None
         else:
@@ -38,11 +38,12 @@ def get_bootstrap_files(args, dest="cloudinit"):
         logger.info('Adding rootfs skel files from these paths: %s', ', '.join(rootfs_skel_dirs))
     else:
         logger.debug('No rootfs skel files.')
+    return list(rootfs_skel_dirs)
 
+def get_bootstrap_files(rootfs_skel_dirs, dest="cloudinit"):
     manifest = OrderedDict()  # type: OrderedDict[str, Dict]
     targz = io.BytesIO()
     tar = tarfile.open(mode="w:gz", fileobj=targz) if dest == "tarfile" else None
-
     for rootfs_skel_dir in rootfs_skel_dirs:
         if os.path.exists(rootfs_skel_dir):
             rootfs_skel_dir = os.path.abspath(os.path.normpath(rootfs_skel_dir))
