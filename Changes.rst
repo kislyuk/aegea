@@ -1,3 +1,12 @@
+Changes for v3.9.0 (2021-07-19)
+===============================
+
+-  Namespace rootfs.skel by command
+
+-  Scan all config file dirs for rootfs.skel (#63)
+
+-  Accommodate vpc eventual consistency
+
 Changes for v3.8.6 (2021-07-08)
 ===============================
 
