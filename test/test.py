@@ -274,7 +274,7 @@ class TestAegea(unittest.TestCase):
 
     @unittest.skipIf(USING_PYTHON2, "requires Python 3 dependencies")
     def test_deploy_utils(self):
-        deploy_utils_bindir = os.path.join(pkg_root, "aegea", "rootfs.skel", "usr", "bin")
+        deploy_utils_bindir = os.path.join(pkg_root, "aegea", "rootfs.skel.build_ami", "usr", "bin")
         for script in glob.glob(deploy_utils_bindir + "/aegea*"):
             self.call([script, "--help"], expect=[dict(return_codes=[0, 1])])
         for script in "aegea-deploy-pilot", "aegea-git-ssh-helper":
