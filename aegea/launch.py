@@ -311,12 +311,12 @@ parser.add_argument("--wait-for-ssh", action="store_true",
                           "Security groups and NACLs must permit SSH from launching host."))
 parser.add_argument("--iam-role", help=("Pass this IAM role to the launched instance through an instance profile. "
                                         "Role credentials will become available in the instance metadata. "
-                                        "To launch an instance without a profile or role, use an empty string here."))
+                                        "To launch an instance without a profile/role, use an empty string here."))
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
 parser.add_argument("--no-manage-iam", action="store_false", dest="manage_iam",
-                    help=("If this option is given, aegea will not create or manage the IAM role or policies for the "
-                          "instance, but will still use the given or default IAM role and instance profile (assuming "
-                          "they have the same name). An error will be raised if they are not found."))
+                    help=("Prevents aegea from creating or managing the IAM role or policies for the instance. The "
+                          "given or default IAM role and instance profile will still be used, raising an error if they "
+                          "are not found."))
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
