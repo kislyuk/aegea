@@ -186,8 +186,11 @@ def launch(args):
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
     if args.iam_role:
         logger.debug("Using %s for iam_role", args.iam_role)
-        umbrella_policy = compose_managed_policies(args.iam_policies)
-        instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
+        if args.manage_iam:
+            umbrella_policy = compose_managed_policies(args.iam_policies)
+            instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
+        else:
+            instance_profile = resources.iam.InstanceProfile(args.iam_role)
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
     if args.availability_zone:
         launch_spec["Placement"] = dict(AvailabilityZone=args.availability_zone)
@@ -307,8 +310,13 @@ parser.add_argument("--wait-for-ssh", action="store_true",
                     help=("Wait for launched instance to begin accepting SSH connections. "
                           "Security groups and NACLs must permit SSH from launching host."))
 parser.add_argument("--iam-role", help=("Pass this IAM role to the launched instance through an instance profile. "
-                                        "Role credentials will become available in the instance metadata."))
+                                        "Role credentials will become available in the instance metadata. "
+                                        "To launch an instance without a profile or role, use an empty string here."))
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
+parser.add_argument("--no-manage-iam", action="store_false", dest="manage_iam",
+                    help=("If this option is given, aegea will not create or manage the IAM role or policies for the "
+                          "instance, but will still use the given or default IAM role and instance profile (assuming "
+                          "they have the same name). An error will be raised if they are not found."))
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--dry-run", "--dryrun", action="store_true")

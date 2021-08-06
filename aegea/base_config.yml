@@ -700,7 +700,6 @@ secrets_ls:
 
 launch:
   instance_type: t3.micro
-  iam_role: aegea.launch
   tags: []
   storage: []
   commands: []
@@ -709,6 +708,8 @@ launch:
   rootfs_skel_dirs:
     - auto
   cloud_config_data: {}
+  manage_iam: true
+  iam_role: aegea.launch
   iam_policies:
     - IAMReadOnlyAccess
     - AmazonEC2ContainerRegistryReadOnly

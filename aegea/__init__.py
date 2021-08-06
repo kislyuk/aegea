@@ -40,7 +40,8 @@ class AegeaConfig(tweak.Config):
 class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
     def _get_help_string(self, action):
         default = _get_config_for_prog(self._prog).get(action.dest)
-        if default is not None and not isinstance(default, list):
+        # Avoid printing defaults for list and store_false actions, since they are confusing.
+        if default is not None and not isinstance(default, list) and "StoreFalse" not in action.__class__.__name__:
             return action.help + " (default: {})".format(default)
         return action.help
 
