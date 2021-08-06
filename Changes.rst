@@ -1,3 +1,8 @@
+Changes for v3.9.1 (2021-08-06)
+===============================
+
+-  launch: add manage_iam option, –no-manage-iam flag to access it
+
 Changes for v3.9.0 (2021-07-19)
 ===============================
 
