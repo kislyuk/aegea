@@ -39,10 +39,13 @@ def get_policies_for_principal(cell, row):
         raise
 
 def users(args):
-    current_user = resources.iam.CurrentUser()
+    try:
+        current_user_id = resources.iam.CurrentUser().user_id
+    except botocore.exceptions.ClientError:
+        current_user_id = None
 
     def mark_cur_user(cell, row):
-        return ">>>" if row.user_id == current_user.user_id else ""
+        return ">>>" if row.user_id == current_user_id else ""
 
     def describe_mfa(cell, row):
         try:

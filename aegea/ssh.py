@@ -80,12 +80,9 @@ def resolve_instance_public_dns(name):
     return instance.public_dns_name
 
 def get_user_info():
-    res = clients.sts.get_caller_identity()
-    iam_username = ARN(res["Arn"]).resource.split("/")[1]
+    iam_username = ARN.get_iam_username()
     linux_username, at, domain = iam_username.partition("@")
-    iam_user_id = res["UserId"]
-    iam_user_id, colon, session = iam_user_id.partition(":")
-    user_id_bytes = hashlib.sha256(iam_user_id.encode()).digest()[-2:]
+    user_id_bytes = hashlib.sha256(iam_username.encode()).digest()[-2:]
     linux_user_id = str(2000 + (int.from_bytes(user_id_bytes, byteorder=sys.byteorder) // 2))
     return dict(iam_username=iam_username, linux_username=linux_username, linux_user_id=linux_user_id)
 
