@@ -1,3 +1,11 @@
+Changes for v4.0.0 (2021-09-08)
+===============================
+
+-  aegea ssh: Derive SSH user name and ID consistently. Please note:
+   this change alters the algorithm that derives auto-provisioned Linux
+   user IDs from IAM principal names, which can cause changes to EFS
+   permissions and in other situations where UID mappings are used.
+
 Changes for v3.9.1 (2021-08-06)
 ===============================
 
