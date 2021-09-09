@@ -4,6 +4,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, unittest, argparse, collections, copy, re, subprocess, importlib, pkgutil, json, datetime, glob, time
+from unittest.mock import patch
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
@@ -315,6 +316,22 @@ class TestAegea(unittest.TestCase):
     def test_ssh_utils(self):
         from aegea.util.aws.ssm import ensure_session_manager_plugin
         ensure_session_manager_plugin()
+
+    def test_ssh_get_user_info(self):
+        from aegea.ssh import get_user_info
+        testcases = ((
+            "wookie",
+            {"iam_username": "wookie", "linux_user_id": "24073", "linux_username": "wookie"}
+        ), (
+            "unknown",
+            {"iam_username": "unknown", "linux_user_id": "26068", "linux_username": "unknown"}
+        ), (
+            "wookie.user@example.com",
+            {"iam_username": "wookie.user@example.com", "linux_user_id": "21919", "linux_username": "wookie.user"}
+        ))
+        for iam_username, expected_user_info in testcases:
+            with patch.object(ARN, "get_iam_username", lambda: iam_username):
+                self.assertDictEqual(get_user_info(), expected_user_info)
 
 if __name__ == '__main__':
     unittest.main()
