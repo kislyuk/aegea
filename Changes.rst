@@ -1,3 +1,8 @@
+Changes for v4.0.1 (2021-09-15)
+===============================
+
+-  ssh: Avoid using DescribeSubnets to get instance AZ
+
 Changes for v4.0.0 (2021-09-08)
 ===============================
 
