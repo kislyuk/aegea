@@ -210,7 +210,7 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
                 InstanceId=instance.id,
                 InstanceOSUser=username,
                 SSHPublicKey=ssh_public_key,
-                AvailabilityZone=instance.subnet.availability_zone
+                AvailabilityZone=instance.placement["AvailabilityZone"]
             )
         return [], username + "@" + (instance.id if use_ssm else resolve_instance_public_dns(hostname))
 
