@@ -1,3 +1,8 @@
+Changes for v4.0.2 (2021-10-11)
+===============================
+
+-  ensure_s3_bucket: Set bucket default encryption
+
 Changes for v4.0.1 (2021-09-15)
 ===============================
 
