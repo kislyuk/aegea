@@ -36,6 +36,13 @@ def describe_bucket_worker(bucket):
                                        end_time=datetime.utcnow(), period=3600, BucketName=bucket.name,
                                        StorageType="StandardStorage", resource=cloudwatch)
     bucket.BucketSizeBytes = format_number(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None
+    try:
+        res = clients.s3.get_bucket_encryption(Bucket=bucket.name)
+        enc = res["ServerSideEncryptionConfiguration"]["Rules"][0]["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"]
+        bucket.Encryption = enc
+    except ClientError as e:
+        expect_error_codes(e, "ServerSideEncryptionConfigurationNotFoundError", "AccessDenied")
+        bucket.Encryption = None
     return bucket
 
 def buckets(args):

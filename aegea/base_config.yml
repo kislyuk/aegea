@@ -275,6 +275,7 @@ s3_buckets:
     - LocationConstraint
     - NumberOfObjects
     - BucketSizeBytes
+    - Encryption
 
 s3_versions:
   columns:
