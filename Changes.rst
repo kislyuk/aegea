@@ -1,3 +1,8 @@
+Changes for v4.0.3 (2021-10-11)
+===============================
+
+-  Fix loading of default value for encryption config
+
 Changes for v4.0.2 (2021-10-11)
 ===============================
 
