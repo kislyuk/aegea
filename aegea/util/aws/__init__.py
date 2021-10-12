@@ -192,7 +192,8 @@ class S3BucketLifecycleBuilder:
     def __iter__(self):
         yield ("Rules", self.rules)
 
-def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
+def ensure_s3_bucket(name=None, policy=None, lifecycle=None, encryption=None):
+    from ... import config
     if name is None:
         name = "aegea-assets-{}".format(ARN.get_account_id())
     bucket = resources.s3.Bucket(name)
@@ -205,6 +206,16 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None):
         else:
             bucket.create(CreateBucketConfiguration=dict(LocationConstraint=ARN.get_region()))
     bucket.wait_until_exists()
+    if encryption is None:
+        encryption = config.s3.default_encryption_config
+    try:
+        clients.s3.get_bucket_encryption(Bucket=bucket.name)
+    except ClientError as e:
+        expect_error_codes(e, "ServerSideEncryptionConfigurationNotFoundError", "AccessDenied")
+        try:
+            clients.s3.put_bucket_encryption(Bucket=bucket.name, ServerSideEncryptionConfiguration=encryption)
+        except ClientError as e:
+            expect_error_codes(e, "AccessDenied")
     if policy:
         bucket.Policy().put(Policy=str(policy))
     if lifecycle:

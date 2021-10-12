@@ -263,6 +263,9 @@ ebs_snapshots:
     - start_time
     - tags
 
+s3:
+  default_encryption_config: {"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}
+
 s3_buckets:
   resource: s3
   subresource: Bucket
