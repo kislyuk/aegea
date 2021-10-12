@@ -207,7 +207,7 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None, encryption=None):
             bucket.create(CreateBucketConfiguration=dict(LocationConstraint=ARN.get_region()))
     bucket.wait_until_exists()
     if encryption is None:
-        encryption = config.s3.default_encryption_config
+        encryption = json.loads(config.s3.default_encryption_config)
     try:
         clients.s3.get_bucket_encryption(Bucket=bucket.name)
     except ClientError as e:
