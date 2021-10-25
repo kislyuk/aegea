@@ -187,8 +187,13 @@ def launch(args):
     if args.iam_role:
         logger.debug("Using %s for iam_role", args.iam_role)
         if args.manage_iam:
-            umbrella_policy = compose_managed_policies(args.iam_policies)
-            instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
+            try:
+                umbrella_policy = compose_managed_policies(args.iam_policies)
+                instance_profile = ensure_instance_profile(args.iam_role, policies=[umbrella_policy])
+            except ClientError as e:
+                expect_error_codes(e, "AccessDenied")
+                raise AegeaException('Unable to validate IAM permissions for launch. If you have only iam:PassRole '
+                                     'access, try --no-manage-iam. If you have no IAM access, try --iam-role="".')
         else:
             instance_profile = resources.iam.InstanceProfile(args.iam_role)
         launch_spec["IamInstanceProfile"] = dict(Arn=instance_profile.arn)
