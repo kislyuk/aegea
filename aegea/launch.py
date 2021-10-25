@@ -265,6 +265,8 @@ def launch(args):
         time.sleep(1)
     if args.use_dns:
         dns_zone.update(args.hostname, instance.private_dns_name)
+    if args.use_imdsv2:
+        clients.ec2.modify_instance_metadata_options(InstanceId=instance.id, HttpTokens="required")
     add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name or instance.id], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
@@ -314,6 +316,8 @@ parser.add_argument("--iam-role", help=("Pass this IAM role to the launched inst
                                         "To launch an instance without a profile/role, use an empty string here."))
 parser.add_argument("--iam-policies", nargs="+", metavar="IAM_POLICY_NAME",
                     help="Ensure the default or specified IAM role has the listed IAM managed policies attached")
+parser.add_argument("--use-imdsv2", "--metadata-options-http-tokens-required", action="store_true",
+                    help="Configure the instance to use Instance Metadata Service Version 2")
 parser.add_argument("--no-manage-iam", action="store_false", dest="manage_iam",
                     help=("Prevents aegea from creating or managing the IAM role or policies for the instance. The "
                           "given or default IAM role and instance profile will still be used, raising an error if they "
