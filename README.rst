@@ -115,17 +115,31 @@ Configuration management
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Aegea supports ingesting configuration from a configurable array of sources. Each source is a JSON or YAML file.
 Configuration sources that follow the first source update the configuration using recursive dictionary merging. Sources
-are enumerated in the following order (i.e., in order of increasing priority):
+are enumerated in the following order of priority:
 
-- Site-wide configuration source, ``/etc/aegea/config.yml``
-- User configuration source, ``~/.config/aegea/config.yml``
+- Command line options (values take priority over all other sources)
 - Any sources listed in the colon-delimited variable ``AEGEA_CONFIG_FILE``
-- Command line options
+- User configuration source, ``~/.config/aegea/config.yml``
+- Site-wide configuration source, ``/etc/aegea/config.yml``
+- Configuration defaults from `base_config.yml <https://github.com/kislyuk/aegea/blob/develop/aegea/base_config.yml>`_
 
 **Array merge operators**: When loading a chain of configuration sources, Aegea uses recursive dictionary merging to
 combine the sources. Additionally, when the original config value is a list, Aegea supports array manipulation
-operators, which let you extend and modify arrays defined in underlying configurations. See
-https://github.com/kislyuk/tweak#array-merge-operators for a list of these operators.
+operators, which let you extend and modify arrays defined in underlying configurations::
+
+    launch:
+      iam_policies:
+        $append: AmazonS3FullAccess
+
+or::
+
+   launch:
+     iam_policies:
+       $extend:
+         - AmazonS3FullAccess
+         - AmazonSQSFullAccess
+
+See https://github.com/kislyuk/tweak#array-merge-operators for a formal description of these operators.
 
 Building AMIs and Docker images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
