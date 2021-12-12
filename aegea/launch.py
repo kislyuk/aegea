@@ -264,10 +264,7 @@ def launch(args):
         expect_error_codes(e, "DryRunOperation")
         logger.info("Dry run succeeded")
         exit()
-    while instance.state["Name"] != "running":
-        logger.debug("%s %s", instance, instance.state["Name"])
-        instance = resources.ec2.Instance(instance.id)
-        time.sleep(1)
+    instance.wait_until_running()
     if args.use_dns:
         dns_zone.update(args.hostname, instance.private_dns_name)
     if args.use_imdsv2:

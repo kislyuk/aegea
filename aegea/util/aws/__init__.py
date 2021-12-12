@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 
 import boto3, botocore.session
 from botocore.exceptions import ClientError
-from botocore.utils import parse_to_aware_datetime
+from botocore.utils import parse_to_aware_datetime, InstanceMetadataFetcher
 
 from ... import logger
 from .. import paginate
@@ -313,10 +313,12 @@ def get_bdm(ami=None, max_devices=12, ebs_storage=None):
     bdm.extend(ebs_bdm)
     return bdm
 
-def get_metadata(path):
-    res = requests.get("http://169.254.169.254/latest/meta-data/{}".format(path))
-    res.raise_for_status()
-    return res.content.decode()
+def get_metadata(category):
+    imds_fetcher = InstanceMetadataFetcher()
+    res = imds_fetcher._get_request(url_path="latest/meta-data/{}".format(category),
+                                    retry_func=None,
+                                    token=imds_fetcher._fetch_metadata_token())
+    return res.text
 
 def get_ecs_task_metadata(path="/task"):
     res = requests.get(os.environ["ECS_CONTAINER_METADATA_URI"] + path)
