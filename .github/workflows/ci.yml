@@ -37,8 +37,4 @@ jobs:
       run: |
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
         make test
-#    - name: Upload coverage data
-#      if: ${{matrix.python-version == '3.8'}}
-#      run: |
-#        coverage combine
-#        bash <(curl -s https://codecov.io/bash)
+    - uses: codecov/codecov-action@v2
