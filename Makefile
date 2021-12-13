@@ -1,8 +1,5 @@
 SHELL=/bin/bash -eo pipefail
 
-wheel: lint constants version clean
-	./setup.py bdist_wheel
-
 constants: aegea/constants.json
 version: aegea/version.py
 
@@ -30,16 +27,16 @@ docs:
 	$(MAKE) -C docs html
 
 install: clean version
-	python3 -m pip install wheel
-	./setup.py bdist_wheel
+	python3 -m pip install build
+	python3 -m build
 	python3 -m pip install --upgrade dist/*.whl
 
 install_venv: clean
 	virtualenv --prompt "(aegea-venv) " .venv
 	source .venv/bin/activate; pip install --upgrade pip
 	source .venv/bin/activate; pip install --upgrade setuptools
-	source .venv/bin/activate; pip install --upgrade wheel
-	source .venv/bin/activate; python ./setup.py bdist_wheel
+	source .venv/bin/activate; pip install --upgrade build
+	source .venv/bin/activate; python -m build
 	source .venv/bin/activate; pip install --upgrade dist/*.whl
 	@echo "Run \". $$(pwd)/.venv/bin/activate\" to activate the aegea installation"
 
@@ -48,6 +45,6 @@ clean:
 	-rm -rf *.egg-info
 	-rm -rf .venv
 
-.PHONY: wheel lint test test_deps docs install clean version aegea/version.py setup.py
+.PHONY: lint test test_deps docs install clean version aegea/version.py setup.py
 
 include common.mk
