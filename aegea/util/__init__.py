@@ -55,8 +55,7 @@ def natural_sort(i):
 def paginate(boto3_paginator, *args, **kwargs):
     for page in boto3_paginator.paginate(*args, **kwargs):
         for result_key in boto3_paginator.result_keys:
-            for value in page.get(result_key.parsed.get("value"), []):
-                yield value
+            yield from page.get(result_key.parsed.get("value"), [])
 
 class Timestamp(datetime):
     """
