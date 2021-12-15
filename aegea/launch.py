@@ -118,7 +118,7 @@ def launch(args):
             if not (args.ami or args.ami_tags or args.ami_tag_keys):
                 args.ami_tag_keys.append("AegeaVersion")
             args.ami = resolve_ami(args.ami, tags=ami_tags, tag_keys=args.ami_tag_keys, arch=arch)
-            logger.info("Using %s", args.ami)
+            logger.info("Using %s (%s)", args.ami, args.ami.name)
         except AegeaException as e:
             if args.ami is None and len(ami_tags) == 0 and "Could not resolve AMI" in str(e):
                 raise AegeaException("No AMI was given, and no " + arch + " AMIs were found in this account. "
@@ -175,12 +175,12 @@ def launch(args):
                          SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
                          OwnerSSHKeyName=ssh_key_name, **dict(args.tags))
     user_data_args.update(dict(args.cloud_config_data))
-    launch_spec = dict(ImageId=args.ami,
+    launch_spec = dict(ImageId=args.ami.id,
                        KeyName=ssh_key_name,
                        SubnetId=subnet.id,
                        SecurityGroupIds=[sg.id for sg in security_groups],
                        InstanceType=args.instance_type,
-                       BlockDeviceMappings=get_bdm(ami=args.ami, ebs_storage=args.storage),
+                       BlockDeviceMappings=get_bdm(ami=args.ami.id, ebs_storage=args.storage),
                        UserData=get_user_data(**user_data_args))
     tag_spec = dict(ResourceType="instance", Tags=encode_tags(instance_tags))
     logger.info("Launch spec user data is %i bytes long", len(launch_spec["UserData"]))
@@ -272,7 +272,7 @@ def launch(args):
     add_ssh_host_key_to_known_hosts(hostkey_line([instance.public_dns_name or instance.id], ssh_host_key))
     if args.wait_for_ssh:
         wait_for_port(instance.public_dns_name, 22)
-    logger.info("Launched %s in %s using %s", instance, subnet, args.ami)
+    logger.info("Launched %s in %s using %s (%s)", instance, subnet, args.ami, args.ami.name)
     return dict(instance_id=instance.id)
 
 parser = register_parser(launch)

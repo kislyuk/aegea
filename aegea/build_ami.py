@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, json, time, base64
+import os, sys, json, time, base64, copy
 from io import open
 
 from . import register_parser, logger, config, __version__
@@ -24,11 +24,11 @@ def build_ami(args):
     else:
         if args.base_ami == "auto":
             distribution, release = args.base_ami_distribution.split(":", 1)
-            args.ami = locate_ami(distribution=distribution, release=release, architecture=args.architecture)
+            args.ami = locate_ami(distribution=distribution, release=release, architecture=args.architecture).id
         else:
             args.ami = args.base_ami
         hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
-        launch_args = launch_parser.parse_args(args=[hostname], namespace=args)
+        launch_args = launch_parser.parse_args(args=[hostname], namespace=copy.deepcopy(args))
         launch_args.iam_role = args.iam_role
         launch_args.cloud_config_data.update(rootfs_skel_dirs=get_rootfs_skel_dirs(args))
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
@@ -53,7 +53,7 @@ def build_ami(args):
             else:
                 raise
     else:
-        raise Exception("cloud-init encountered errors")
+        raise AegeaException("cloud-init encountered errors; please examine and terminate {}".format(instance))
     sys.stderr.write(GREEN("OK") + "\n")
     description = "Built by {} for {}".format(__name__, ARN.get_iam_username())
     for existing_ami in resources.ec2.images.filter(Owners=["self"], Filters=[{"Name": "name", "Values": [args.name]}]):

@@ -253,10 +253,10 @@ class TestAegea(unittest.TestCase):
         make_waiter(clients.efs.describe_file_systems, "FileSystems[].LifeCycleState", "available", "pathAny")
 
     def test_locate_ami(self):
-        self.assertTrue(locate_ami("Ubuntu", "20.04", "amd64").startswith("ami-"))
-        self.assertTrue(locate_ami("Ubuntu", "20.04", "arm64").startswith("ami-"))
-        self.assertTrue(locate_ami("Amazon Linux", "2", "x86_64").startswith("ami-"))
-        self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "20.04", "amd64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "20.04", "arm64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2", "x86_64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").id.startswith("ami-"))
 
     def test_ip_ranges(self):
         get_public_ip_ranges()

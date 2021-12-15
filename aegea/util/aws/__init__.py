@@ -32,7 +32,7 @@ def locate_ami(distribution, release, architecture):
         ssm_param_name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{}-gp2".format(architecture)
         ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
-        return ami_id
+        return resources.ec2.Image(ami_id)
     elif distribution == "Ubuntu":
         if architecture == "x86_64":
             architecture = "amd64"
@@ -40,7 +40,7 @@ def locate_ami(distribution, release, architecture):
         ssm_param_name = ssm_param_name.format(product="server", release=release, arch=architecture)
         ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
-        return ami_id
+        return resources.ec2.Image(ami_id)
     raise AegeaException("No AMI found for {} {} {}".format(distribution, release, architecture))
 
 def ensure_vpc():
@@ -340,7 +340,9 @@ def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset())
     """
     assert arch in {"x86_64", "arm64"}
 
-    if ami is None or not ami.startswith("ami-"):
+    if ami is not None and ami.startswith("ami-"):
+        return resources.ec2.Image(ami)
+    else:
         if ami is None:
             filters = dict(Owners=["self"],
                            Filters=[dict(Name="state", Values=["available"]), dict(Name="architecture", Values=[arch])])
@@ -361,8 +363,7 @@ def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset())
                 amis = sorted(all_amis, key=lambda x: x.creation_date)
         if not amis:
             raise AegeaException("Could not resolve AMI {}".format(dict(tags, ami=ami)))
-        ami = amis[-1].id
-    return ami
+        return amis[-1]
 
 offers_api = "https://pricing.us-east-1.amazonaws.com/offers/v1.0"
 

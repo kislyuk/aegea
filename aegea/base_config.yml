@@ -126,7 +126,7 @@ build_ami:
       - source: "deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/"
         filename: rstudio.list
         keyid: E298A3A825C0D65DFD57CBB651716619E084DAB9
-  cloud_init_timeout_seconds: 3600
+  cloud_init_timeout_seconds: 900
   cloud_init_poll_interval_seconds: 8
 
 # Name your Route 53 private DNS zone here. By default, aegea will register instances' names in this zone. For example,
