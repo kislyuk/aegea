@@ -5,8 +5,6 @@ For general help, run ``aegea help`` or visit https://github.com/kislyuk/aegea/w
 For help with individual commands, run ``aegea <command> --help``.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings, platform
 from textwrap import fill
 from typing import Dict, Any
@@ -14,7 +12,6 @@ from typing import Dict, Any
 import tweak, boto3, botocore
 from botocore.exceptions import NoRegionError
 from io import open
-from .util.compat import USING_PYTHON2
 from .version import __version__
 
 logger = logging.getLogger(__name__)
@@ -154,8 +151,6 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
         add_parser_args["help"] = add_parser_args["description"].strip().splitlines()[0].rstrip(".")
     add_parser_args.setdefault("formatter_class", AegeaHelpFormatter)
     subparser = _subparsers[parent.prog].add_parser(parser_name.replace("_", "-"), **add_parser_args)
-    if "_" in parser_name and USING_PYTHON2:
-        _subparsers[parent.prog]._name_parser_map[parser_name] = subparser
     subparser.add_argument("--max-col-width", "-w", type=int, default=32,
                            help="When printing tables, truncate column contents to this width. Set to 0 for auto fit.")
     subparser.add_argument("--json", action="store_true",

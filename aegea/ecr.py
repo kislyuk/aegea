@@ -4,8 +4,6 @@ Manage AWS Elastic Container Registry (ECR) resources.
 Use ``aws ecr create-repository`` and ``aws ecr delete-repository`` to manage ECR repositories.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import json
 from typing import Dict, List
 

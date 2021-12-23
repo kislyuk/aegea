@@ -2,8 +2,6 @@
 Manage AWS Batch jobs, queues, and compute environments.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, itertools
 from typing import List
 

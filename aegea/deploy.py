@@ -38,10 +38,10 @@ You can also manually trigger a rebuild with a service reload:
 
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, json, argparse
 from datetime import datetime, timedelta
+from functools import lru_cache
+
 from dateutil.tz import tzutc
 from botocore.exceptions import ClientError
 
@@ -49,7 +49,6 @@ from . import register_parser, logger, secrets
 from .util.git import parse_repo_name, get_repo, private_submodules
 from .util.crypto import key_fingerprint
 from .util.printing import format_table, page_output, get_field, get_cell, tabulate, BOLD
-from .util.compat import lru_cache
 from .util.aws import ARN, resources, clients, resolve_instance_id, get_iam_role_for_instance, expect_error_codes
 from .util.aws.iam import IAMPolicyBuilder, ensure_iam_policy
 

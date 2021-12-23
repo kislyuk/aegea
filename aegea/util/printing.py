@@ -1,15 +1,10 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, json, shutil, subprocess, re, errno
 from datetime import datetime, timedelta
+from shutil import get_terminal_size
 
 import botocore
 
 from .exceptions import GetFieldError, AegeaException
-from .compat import str, get_terminal_size
-
-USING_PYTHON2 = True if sys.version_info < (3, 0) else False
 
 def CYAN(message=None):
     if message is None:
@@ -182,7 +177,7 @@ def page_output(content, pager=None, file=None):
             raise AegeaException()
     except Exception as e:
         if not (isinstance(e, IOError) and e.errno == errno.EPIPE):
-            file.write(content.encode("utf-8") if USING_PYTHON2 else content)
+            file.write(content)
     finally:
         try:
             pager_process.terminate()
@@ -204,9 +199,8 @@ def format_datetime(d):
     from dateutil.tz import tzutc
     from babel import dates
     d = d.replace(microsecond=0)
-    if not USING_PYTHON2:
-        # Switch from UTC to local TZ
-        d = d.astimezone(tz=None)
+    # Switch from UTC to local TZ
+    d = d.astimezone(tz=None)
     return dates.format_timedelta(d - datetime.now(tzutc()), add_direction=True)
 
 def format_cell(cell):

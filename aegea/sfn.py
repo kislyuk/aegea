@@ -2,8 +2,6 @@
 Manage AWS Step Functions state machines and executions.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, json, time
 from typing import Set, Dict, Any
 

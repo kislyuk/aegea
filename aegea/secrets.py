@@ -35,9 +35,7 @@ Using ``aegea secrets`` to save an API key (password) accessible by the IAM grou
 
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import os, sys, argparse, subprocess, json, copy
+import os, sys, argparse, subprocess, json, copy, io
 
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
@@ -50,7 +48,6 @@ from .util.aws.iam import IAMPolicyBuilder, ensure_iam_policy
 from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
 from .util.crypto import new_ssh_key, hostkey_line, key_fingerprint
-from .util.compat import StringIO
 
 def parse_principal(args):
     if args.instance_profile:
@@ -92,7 +89,7 @@ ls_parser = register_listing_parser(ls, parent=secrets_parser)
 def put(args):
     if args.generate_ssh_key:
         ssh_key = new_ssh_key()
-        buf = StringIO()
+        buf = io.StringIO()
         ssh_key.write_private_key(buf)
         secret_value = buf.getvalue()
     elif args.secret_name in os.environ:

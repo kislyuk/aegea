@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, unittest, argparse, collections, copy, re, subprocess, importlib, pkgutil, json, datetime, glob, time
 from unittest.mock import patch
@@ -17,7 +14,6 @@ from aegea.util.aws import (resolve_ami, locate_ami, get_ondemand_price_usd, ARN
 from aegea.util.aws.iam import IAMPolicyBuilder
 from aegea.util.aws.batch import ensure_job_definition
 from aegea.util.aws.spot import SpotFleetBuilder
-from aegea.util.compat import USING_PYTHON2, str
 from aegea.util.exceptions import AegeaException
 from aegea.util.git import private_submodules
 
@@ -87,7 +83,7 @@ class TestAegea(unittest.TestCase):
             elif subcommand in ("start", "stop", "reboot", "terminate", "rename"):
                 args += [instance_id, instance_id, "--dry-run"]
             elif subcommand in ("grep", "filter"):
-                args += ["--help"] if USING_PYTHON2 else ["error", "syslog", "--start-time=-2h", "--end-time=-5m"]
+                args += ["error", "syslog", "--start-time=-2h", "--end-time=-5m"]
                 expect.append(dict(return_codes=[os.EX_DATAERR]))
             elif subcommand == "launch":
                 args += ["--no-verify-ssh-key-pem-file", "--dry-run", "test", "--ubuntu-linux-ami"]
@@ -216,8 +212,7 @@ class TestAegea(unittest.TestCase):
         self.assertEqual(len(policy.policy["Statement"]), 7)
 
     def test_aws_utils(self):
-        if not USING_PYTHON2:
-            self.assertTrue(isinstance(get_ondemand_price_usd("us-east-1", "t2.micro"), str))
+        self.assertTrue(isinstance(get_ondemand_price_usd("us-east-1", "t2.micro"), str))
         self.assertEquals(str(ARN(region="", account_id="")), "arn:aws::::")
         self.assertTrue(str(ARN()).startswith("arn:aws:"))
         self.assertEquals(str(ARN("arn:aws:foo:bar:xyz:zzt")), "arn:aws:foo:bar:xyz:zzt")
@@ -273,7 +268,6 @@ class TestAegea(unittest.TestCase):
             with self.assertRaises(Exception):
                 print(Timestamp(invalid_input))
 
-    @unittest.skipIf(USING_PYTHON2, "requires Python 3 dependencies")
     def test_deploy_utils(self):
         deploy_utils_bindir = os.path.join(pkg_root, "aegea", "rootfs.skel.build_ami", "usr", "bin")
         for script in glob.glob(deploy_utils_bindir + "/aegea*"):

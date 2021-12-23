@@ -7,8 +7,6 @@ generate. After generation, view reports with ``aegea billing ls``. See ``aegea 
 Reports can also be configured and viewed at https://console.aws.amazon.com/billing/home.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, json, zipfile, gzip, csv, io, argparse
 from io import BytesIO, TextIOWrapper
 from datetime import datetime, timedelta

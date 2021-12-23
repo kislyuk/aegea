@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile, time
 
 import boto3

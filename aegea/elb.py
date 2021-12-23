@@ -2,9 +2,8 @@
 Manage AWS EC2 Elastic Load Balancers (ELBs) and Application Load Balancers (ALBs).
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse
+from functools import lru_cache
 
 from botocore.exceptions import ClientError
 
@@ -12,7 +11,6 @@ from .ls import register_parser, register_listing_parser
 from .util import Timestamp, paginate, hashabledict
 from .util.printing import page_output, tabulate
 from .util.exceptions import AegeaException
-from .util.compat import lru_cache
 from .util.aws import (ARN, resources, clients, resolve_instance_id, resolve_security_group, get_elb_dns_aliases,
                        ensure_vpc, expect_error_codes, availability_zones)
 from .util.aws.dns import DNSZone

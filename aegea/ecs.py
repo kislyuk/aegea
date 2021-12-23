@@ -2,8 +2,6 @@
 Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, time, json, hashlib
 from itertools import product
 from functools import partial
@@ -16,7 +14,6 @@ from .batch import add_command_args, add_job_defn_args, print_event
 from .ls import register_parser, register_listing_parser
 from .ssh import ssh_to_ecs_container
 from .util import Timestamp, paginate, ThreadPoolExecutor
-from .util.compat import USING_PYTHON2
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
 from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_log_group,
@@ -183,8 +180,7 @@ def run(args):
         return res["tasks"][0]
 
 register_parser_args = dict(parent=ecs_parser, help="Run a Fargate task")
-if not USING_PYTHON2:
-    register_parser_args["aliases"] = ["launch"]
+register_parser_args["aliases"] = ["launch"]
 
 run_parser = register_parser(run, **register_parser_args)
 add_command_args(run_parser)

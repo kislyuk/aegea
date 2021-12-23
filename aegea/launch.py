@@ -21,7 +21,6 @@ Examples:
 - Launch a spot r5d.xlarge instance with the home directory mounted on EFS:
     aegea launch my-instance --spot-price 1 --instance-type r5d.xlarge --efs-home
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys, time, datetime, base64, json
 from typing import Dict, List

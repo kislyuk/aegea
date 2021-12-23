@@ -1,12 +1,9 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, base64, io, json, subprocess, random, string, tarfile
 from collections import OrderedDict
 from typing import Dict, Any
 
 from .. import logger
 from . import gzip_compress_bytes
-from .compat import StringIO
 from .crypto import get_public_key_from_pair
 from .aws import ensure_s3_bucket, clients
 
@@ -103,7 +100,7 @@ def get_user_data(host_key=None, commands=None, packages=None, rootfs_skel_dirs=
     for key in sorted(kwargs):
         cloud_config_data[key] = kwargs[key]
     if host_key is not None:
-        buf = StringIO()
+        buf = io.StringIO()
         host_key.write_private_key(buf)
         cloud_config_data["ssh_keys"] = dict(rsa_private=buf.getvalue(),
                                              rsa_public=get_public_key_from_pair(host_key))

@@ -2,8 +2,6 @@
 Manage IAM users, groups, roles, and policies
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, collections, random, string
 
 import botocore

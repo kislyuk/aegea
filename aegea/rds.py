@@ -2,8 +2,6 @@
 Utilities to manage AWS Relational Database Service instances and snapshots.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, argparse, getpass
 from datetime import datetime
 

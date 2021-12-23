@@ -5,7 +5,6 @@ Deployment manager daemon for aegea deploy.
 For more information, see ``aegea deploy --help``.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os, sys, subprocess, json, logging, argparse, shutil, signal
 import boto3, requests
 from datetime import datetime

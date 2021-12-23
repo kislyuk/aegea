@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, json, re
 from datetime import datetime, timedelta
 from statistics import median

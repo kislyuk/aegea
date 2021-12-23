@@ -4,9 +4,8 @@ Utilities to manage AWS Elastic Block Store volumes and snapshots.
 To delete EBS volumes or snapshots, use ``aegea rm``.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, re, subprocess, time, json
+from functools import lru_cache
 
 from botocore.exceptions import ClientError
 
@@ -15,7 +14,6 @@ from .ls import add_name, filter_collection, filter_and_tabulate, register_filte
 from .util import get_mkfs_command
 from .util.printing import page_output, get_cell, tabulate
 from .util.aws import ARN, resources, clients, ensure_vpc, ensure_subnet, resolve_instance_id, encode_tags, get_metadata
-from .util.compat import lru_cache
 
 def complete_volume_id(**kwargs):
     return [i["VolumeId"] for i in clients.ec2.describe_volumes()["Volumes"]]

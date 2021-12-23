@@ -1,14 +1,13 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, re, socket, time, io, gzip, logging, concurrent.futures
 from functools import partial
 from datetime import datetime
-from dateutil.parser import parse as dateutil_parse
-from dateutil.relativedelta import relativedelta
+from reprlib import Repr
 from typing import Dict, Any
 
+from dateutil.parser import parse as dateutil_parse
+from dateutil.relativedelta import relativedelta
+
 from .printing import GREEN
-from .compat import Repr, str, cpu_count
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class Timestamp(datetime):
             return datetime.fromtimestamp(t // 1000, tz=tzutc())
         try:
             units = ["weeks", "days", "hours", "minutes", "seconds"]
-            diffs = {u: float(t[:-1]) for u in units if u.startswith(t[-1])}
+            diffs = {u: float(t[:-1]) for u in units if u.startswith(t[-1])}  # type: ignore
             if len(diffs) == 1:
                 # Snap > 0 governs the rounding of units (hours, minutes and seconds) to 0 to improve cache performance
                 snap_units = {u.rstrip("s"): 0 for u in units[units.index(list(diffs)[0]) + snap:]} if snap else {}
@@ -84,7 +83,7 @@ class Timestamp(datetime):
                 return ts
             return dateutil_parse(t)
         except (ValueError, OverflowError, AssertionError):
-            raise ValueError('Could not parse "{}" as a timestamp or time delta'.format(t))
+            raise ValueError('Could not parse "{}" as a timestamp or time delta'.format(t))  # type: ignore
 
     @classmethod
     def match_precision(cls, timestamp, precision_source):
@@ -131,5 +130,5 @@ def get_mkfs_command(fs_type="xfs", label="aegveph"):
 
 class ThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
     def __init__(self, **kwargs):
-        max_workers = kwargs.pop("max_workers", min(8, (cpu_count() or 1) + 4))
+        max_workers = kwargs.pop("max_workers", min(8, (os.cpu_count() or 1) + 4))
         return concurrent.futures.ThreadPoolExecutor.__init__(self, max_workers=max_workers, **kwargs)

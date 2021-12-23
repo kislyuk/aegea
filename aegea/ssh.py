@@ -22,6 +22,7 @@ SSH connections.
 """
 
 import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess, hashlib
+from functools import lru_cache
 
 import boto3, yaml
 
@@ -31,7 +32,6 @@ from .util.crypto import (add_ssh_host_key_to_known_hosts, ensure_local_ssh_key,
                           add_ssh_key_to_agent, get_ssh_key_path, get_ssh_id)
 from .util.printing import BOLD
 from .util.exceptions import AegeaException
-from .util.compat import lru_cache
 from .util.aws.ssm import ensure_session_manager_plugin, run_command
 
 opts_by_nargs = {

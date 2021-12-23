@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os, sys, json, io, gzip, time, socket, hashlib, uuid
 import requests
 from warnings import warn
@@ -14,7 +12,6 @@ from botocore.utils import parse_to_aware_datetime, InstanceMetadataFetcher
 from ... import logger
 from .. import paginate
 from ..exceptions import AegeaException
-from ..compat import str
 from . import clients, resources
 
 def get_ssm_parameter(name):
