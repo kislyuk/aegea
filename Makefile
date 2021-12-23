@@ -1,13 +1,9 @@
 SHELL=/bin/bash -eo pipefail
 
 constants: aegea/constants.json
-version: aegea/version.py
 
 aegea/constants.json:
 	python3 -c "import aegea; aegea.initialize(); from aegea.util.constants import write; write()"
-
-aegea/version.py: setup.py
-	echo "__version__ = '$$(python setup.py --version)'" > $@
 
 test_deps:
 	python3 -m pip install coverage flake8 mypy types-python-dateutil types-requests types-PyYAML
@@ -26,7 +22,7 @@ init_docs:
 docs:
 	$(MAKE) -C docs html
 
-install: clean version
+install: clean
 	python3 -m pip install build
 	python3 -m build
 	python3 -m pip install --upgrade dist/*.whl
@@ -45,6 +41,6 @@ clean:
 	-rm -rf *.egg-info
 	-rm -rf .venv
 
-.PHONY: lint test test_deps docs install clean version aegea/version.py setup.py
+.PHONY: lint test test_deps docs install clean
 
 include common.mk
