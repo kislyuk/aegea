@@ -2,22 +2,18 @@
 
 import os, sys, glob, subprocess, textwrap, setuptools
 
-try:
-    # Git version extraction logic designed to be compatible with both semver and PEP 440
-    version = subprocess.check_output(["git", "describe", "--tags", "--match", "v*.*.*"]).decode()
-    version = version.strip("v\n").replace("-", "+", 1).replace("-", ".")
-except Exception:
-    version = "0.0.0"
-
 setuptools.setup(
     name="aegea",
-    version=version,
     url="https://github.com/kislyuk/aegea",
     license=open("LICENSE.md").readline().strip(),
     author="Andrey Kislyuk",
     author_email="kislyuk@gmail.com",
     description="Amazon Web Services Operator Interface",
     long_description=open("README.rst").read(),
+    use_scm_version={
+        "write_to": "aegea/version.py",
+    },
+    setup_requires=['setuptools_scm >= 3.4.3'],
     install_requires=[
         "boto3 >= 1.16.43, < 2",
         "argcomplete >= 1.9.5, < 2",

@@ -12,7 +12,7 @@ from typing import Dict, Any
 import tweak, boto3, botocore
 from botocore.exceptions import NoRegionError
 from io import open
-from .version import __version__
+from .version import version as __version__
 
 logger = logging.getLogger(__name__)
 
