@@ -1,3 +1,10 @@
+Changes for v4.1.0 (2021-12-23)
+===============================
+
+-  Begin CloudTrail log reader (aegea cloudtrail)
+
+-  Documentation and test improvements
+
 Changes for v4.0.3 (2021-10-11)
 ===============================
 
