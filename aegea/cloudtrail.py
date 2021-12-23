@@ -1,3 +1,6 @@
+"""
+List CloudTrail trails. Query, filter, and print trail events.
+"""
 import json
 from datetime import datetime
 
@@ -9,7 +12,8 @@ from .util.aws import ARN, resolve_instance_id, resources, clients
 def cloudtrail(args):
     cloudtrail_parser.print_help()
 
-cloudtrail_parser = register_parser(cloudtrail, help="Manage CloudTrail trails", description=__doc__)
+cloudtrail_parser = register_parser(cloudtrail, help="List CloudTrail trails and print trail events",
+                                    description=__doc__)
 
 def ls(args):
     page_output(tabulate(clients.cloudtrail.describe_trails()["trailList"], args))
@@ -37,7 +41,7 @@ def lookup(args):
     for event in paginate(clients.cloudtrail.get_paginator('lookup_events'), **lookup_args):
         print_cloudtrail_event(event)
 
-parser = register_parser(lookup, parent=cloudtrail_parser, help="Look up CloudTrail events")
+parser = register_parser(lookup, parent=cloudtrail_parser, help="Query and print CloudTrail events")
 parser.add_argument("--attributes", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])
 parser.add_argument("--category")
 add_time_bound_args(parser, start="-24h")

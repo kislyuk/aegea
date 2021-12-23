@@ -47,6 +47,8 @@ Below are some highlights from Aegea's suite of commands. Run ``aegea --help`` t
 +----------------------------+-----------------------------------------------------------------------------------------+
 | `aegea secrets`            | List and manage secrets stored in AWS Secrets Manager                                   |
 +----------------------------+-----------------------------------------------------------------------------------------+
+| `aegea cloudtrail`         | Query AWS CloudTrail events to audit the security of your AWS account                   |
++----------------------------+-----------------------------------------------------------------------------------------+
 
 Aegea Launch
 ------------
