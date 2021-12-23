@@ -1,3 +1,8 @@
+Changes for v4.1.1 (2021-12-23)
+===============================
+
+-  Use setuptools-scm to manage version
+
 Changes for v4.1.0 (2021-12-23)
 ===============================
 
