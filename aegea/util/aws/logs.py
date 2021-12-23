@@ -5,7 +5,6 @@ import requests
 
 from ... import logger
 from .. import Timestamp, paginate, ThreadPoolExecutor
-from ..compat import timestamp
 from . import ARN, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
 from .iam import IAMPolicyBuilder
 
@@ -47,8 +46,8 @@ def export_log_files(args):
     if not args.end_time:
         args.end_time = Timestamp.match_precision(Timestamp("-0s"), args.start_time)
     export_task_args = dict(logGroupName=args.log_group,
-                            fromTime=int(timestamp(args.start_time) * 1000),
-                            to=int(timestamp(args.end_time) * 1000),
+                            fromTime=int(datetime.timestamp(args.start_time) * 1000),
+                            to=int(datetime.timestamp(args.end_time) * 1000),
                             destination=bucket.name)
     if args.log_stream:
         export_task_args.update(logStreamNamePrefix=args.log_stream)
@@ -121,9 +120,9 @@ def print_log_events(args):
     for stream in streams:
         get_log_events_args = dict(logGroupName=args.log_group, startFromHead=True, limit=100)
         if args.start_time:
-            get_log_events_args.update(startTime=int(timestamp(args.start_time) * 1000))
+            get_log_events_args.update(startTime=int(datetime.timestamp(args.start_time) * 1000))
         if args.end_time:
-            get_log_events_args.update(endTime=int(timestamp(args.end_time) * 1000))
+            get_log_events_args.update(endTime=int(datetime.timestamp(args.end_time) * 1000))
         while True:
             page = clients.logs.get_log_events(logStreamName=stream, **get_log_events_args)
             for event in page["events"]:

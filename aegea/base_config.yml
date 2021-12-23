@@ -702,6 +702,15 @@ secrets_ls:
     - ARN
     - Tags
 
+cloudtrail_ls:
+  columns:
+    - Name
+    - TrailARN
+    - S3BucketName
+    - S3KeyPrefix
+    - CloudWatchLogsLogGroupArn
+    - HasCustomEventSelectors
+
 launch:
   instance_type: t3.micro
   tags: []

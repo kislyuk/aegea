@@ -29,7 +29,6 @@ from typing import Dict
 
 from . import register_parser, logger
 from .util import Timestamp, paginate, add_time_bound_args, ThreadPoolExecutor
-from .util.compat import timestamp
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate
 from .util.aws import clients
@@ -83,9 +82,9 @@ def filter(args):
     if args.pattern:
         filter_args.update(filterPattern=args.pattern)
     if args.start_time:
-        filter_args.update(startTime=int(timestamp(args.start_time) * 1000))
+        filter_args.update(startTime=int(datetime.timestamp(args.start_time) * 1000))
     if args.end_time:
-        filter_args.update(endTime=int(timestamp(args.end_time) * 1000))
+        filter_args.update(endTime=int(datetime.timestamp(args.end_time) * 1000))
     num_results = 0
     while True:
         for event in paginate(clients.logs.get_paginator("filter_log_events"), **filter_args):
@@ -113,8 +112,8 @@ def grep(args):
     if not args.end_time:
         args.end_time = Timestamp("-0s")
     query = clients.logs.start_query(logGroupName=args.log_group,
-                                     startTime=int(timestamp(args.start_time) * 1000),
-                                     endTime=int(timestamp(args.end_time) * 1000),
+                                     startTime=int(datetime.timestamp(args.start_time) * 1000),
+                                     endTime=int(datetime.timestamp(args.end_time) * 1000),
                                      queryString=args.query)
     seen_results = {}  # type: Dict[str, Dict]
     print_with_context = partial(print_log_event_with_context, before=args.before_context, after=args.after_context)
