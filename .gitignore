@@ -10,6 +10,7 @@ __pycache__/
 /build/
 /dist/
 /.eggs/
+/aegea/version.py
 
 # Sphinx documentation
 /docs/_build/
