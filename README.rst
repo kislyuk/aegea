@@ -127,21 +127,30 @@ are enumerated in the following order of priority:
 
 **Array merge operators**: When loading a chain of configuration sources, Aegea uses recursive dictionary merging to
 combine the sources. Additionally, when the original config value is a list, Aegea supports array manipulation
-operators, which let you extend and modify arrays defined in underlying configurations::
+operators, which let you extend and modify arrays defined in underlying configurations. For example, to enable full S3
+access for all instances launched with `aegea launch`, add the following to ``~/.config/aegea/config.yml``::
 
     launch:
       iam_policies:
         $append: AmazonS3FullAccess
 
-or::
+To enable S3 and SQS access, and also list the instance private IP address and availability zone in ``aegea ls``,
+add the following::
 
    launch:
      iam_policies:
        $extend:
          - AmazonS3FullAccess
          - AmazonSQSFullAccess
+   ls:
+     columns:
+       $extend:
+         - private_ip_address
+         - placement.AvailabilityZone
 
-See https://github.com/kislyuk/tweak#array-merge-operators for a formal description of these operators.
+For a listing of available configuration parameters that can be set, run ``aegea configure`` or see
+https://github.com/kislyuk/aegea/blob/develop/aegea/base_config.yml. See
+https://github.com/kislyuk/tweak#array-merge-operators for a formal description of the array merge operators.
 
 Building AMIs and Docker images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
