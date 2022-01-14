@@ -38,10 +38,12 @@ aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --vo
 """  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
-MAC=$(curl http://169.254.169.254/latest/meta-data/mac)
-export SUBNET_ID=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC/subnet-id)
+IMDS=http://169.254.169.254/latest
+TOKEN=$(curl -sX PUT $IMDS/api/token -H X-aws-ec2-metadata-token-ttl-seconds:90)
+MAC=$(curl -sH X-aws-ec2-metadata-token:$TOKEN $IMDS/meta-data/mac)
+export SUBNET_ID=$(curl -sH X-aws-ec2-metadata-token:$TOKEN $IMDS/meta-data/network/interfaces/macs/$MAC/subnet-id)
 NFS_ENDPOINT=$(echo "$AEGEA_EFS_DESC" | jq -r ".[] | select(.SubnetId == env.SUBNET_ID) | .IpAddress")
-mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_ENDPOINT:/ {efs_mountpoint}"""
+mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_ENDPOINT:/ {efs_mountpoint}"""  # noqa
 
 instance_storage_mgr_shellcode = apt_mgr_shellcode + """
 apt-get install -qqy --no-install-suggests --no-install-recommends mdadm""" + instance_storage_shellcode

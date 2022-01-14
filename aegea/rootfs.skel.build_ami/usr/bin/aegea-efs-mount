@@ -14,8 +14,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--timeout", type=int, default=10)
 args = parser.parse_args()
 
-def get_metadata(path):
-    return requests.get("http://169.254.169.254/latest/meta-data/{}".format(path)).content.decode()
+def get_metadata(category):
+    return subprocess.check_output(["aegea-imds", category]).decode().strip()
 
 az = get_metadata("placement/availability-zone")
 services_domain = get_metadata("services/domain")

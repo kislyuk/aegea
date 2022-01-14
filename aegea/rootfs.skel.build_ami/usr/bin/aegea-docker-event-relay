@@ -12,8 +12,8 @@ class ARN:
     def __str__(self):
         return ":".join(getattr(self, field) for field in self.fields)
 
-def get_metadata(path):
-    return requests.get("http://169.254.169.254/latest/meta-data/{}".format(path)).content.decode()
+def get_metadata(category):
+    return subprocess.check_output(["aegea-imds", category]).decode().strip()
 
 logging.basicConfig(level=logging.ERROR)
 parser = argparse.ArgumentParser()

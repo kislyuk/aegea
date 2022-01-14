@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+"""
+Helper utility that fetches AWS instance metadata.
+"""
+
+import argparse
+
+from botocore.utils import InstanceMetadataFetcher as IMDS
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("category")
+args = parser.parse_args()
+
+imds = IMDS()
+token = imds._fetch_metadata_token()
+print(imds._get_request(url_path=f"latest/meta-data/{args.category}", retry_func=None, token=token).text)

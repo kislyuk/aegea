@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 
 import boto3, botocore.session
 from botocore.exceptions import ClientError
-from botocore.utils import parse_to_aware_datetime, InstanceMetadataFetcher
+from botocore.utils import parse_to_aware_datetime, InstanceMetadataFetcher as IMDS
 
 from ... import logger
 from .. import paginate
@@ -311,11 +311,9 @@ def get_bdm(ami=None, max_devices=12, ebs_storage=None):
     return bdm
 
 def get_metadata(category):
-    imds_fetcher = InstanceMetadataFetcher()
-    res = imds_fetcher._get_request(url_path="latest/meta-data/{}".format(category),
-                                    retry_func=None,
-                                    token=imds_fetcher._fetch_metadata_token())
-    return res.text
+    imds = IMDS()
+    token = imds._fetch_metadata_token()
+    return imds._get_request(url_path=f"latest/meta-data/{category}", retry_func=None, token=token).text
 
 def get_ecs_task_metadata(path="/task"):
     res = requests.get(os.environ["ECS_CONTAINER_METADATA_URI"] + path)

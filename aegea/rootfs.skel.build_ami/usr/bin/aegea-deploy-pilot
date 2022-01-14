@@ -6,8 +6,9 @@ For more information, see ``aegea deploy --help``.
 """
 
 import os, sys, subprocess, json, logging, argparse, shutil, signal
-import boto3, requests
 from datetime import datetime
+
+import boto3, requests
 
 class ARN:
     fields = "arn partition service region account_id resource".split()
@@ -18,8 +19,8 @@ class ARN:
     def __str__(self):
         return ":".join(getattr(self, field) for field in self.fields)
 
-def get_metadata(path):
-    return requests.get("http://169.254.169.254/latest/meta-data/{}".format(path)).content.decode()
+def get_metadata(category):
+    return subprocess.check_output(["aegea-imds", category]).decode().strip()
 
 def get_topic(name):
     sns_topic_arn = ARN(service="sns", region=sns.meta.client.meta.region_name, account_id=account_id, resource=name)

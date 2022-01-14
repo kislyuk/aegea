@@ -107,7 +107,7 @@ build_ami:
     - "ln -sf /lib/systemd/system/docker-event-relay.service /etc/systemd/system/multi-user.target.wants"
     - "ln -sf /lib/systemd/system/efs.service /etc/systemd/system/remote-fs.target.wants"
     - "ln -sf /lib/systemd/system/format-ephemeral-storage.service /etc/systemd/system/sysinit.target.wants"
-    - "echo region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | head -c -1) >> /etc/aws.conf"
+    - "IMDS=http://169.254.169.254/latest; TOKEN=$(curl -sX PUT $IMDS/api/token -H X-aws-ec2-metadata-token-ttl-seconds:90); echo region=$(curl -sH X-aws-ec2-metadata-token:$TOKEN $IMDS/meta-data/placement/region) >> /etc/aws.conf"
     - "sed -i -e '/cloudconfig/ d' /etc/fstab"
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
