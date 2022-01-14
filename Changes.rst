@@ -1,3 +1,10 @@
+Changes for v4.2.0 (2022-01-14)
+===============================
+
+-  Bump dependency versions
+
+-  Implement full IMDSv2 support
+
 Changes for v4.1.2 (2021-12-23)
 ===============================
 
