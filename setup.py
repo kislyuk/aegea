@@ -15,7 +15,7 @@ setuptools.setup(
     },
     setup_requires=['setuptools_scm >= 3.4.3'],
     install_requires=[
-        "boto3 >= 1.16.43, < 2",
+        "boto3 >= 1.20.35, < 2",
         "argcomplete >= 1.9.5, < 2",
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",

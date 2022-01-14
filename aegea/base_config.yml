@@ -9,7 +9,7 @@
 build_image:
   commands:
     - "update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"
-    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.17.82 awscli==1.19.82 miniwdl==1.1.5"
+    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.20.35 awscli==1.22.35 miniwdl==1.4.3"
   packages:
     - language-pack-en
     - iptables-persistent
@@ -112,7 +112,7 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
-    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.17.82 awscli==1.19.82 miniwdl==1.1.5"
+    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.20.35 awscli==1.22.35 miniwdl==1.4.3"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
     - "systemctl mask apport.service apt-daily.service apt-daily-upgrade.service"
