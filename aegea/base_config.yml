@@ -83,6 +83,7 @@ build_docker_image:
   cloud_config_data: {}
 
 build_ami:
+  tags: {}
   base_ami: auto
   base_ami_distribution: Ubuntu:20.04
   architecture: x86_64
