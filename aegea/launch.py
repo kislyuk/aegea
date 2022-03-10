@@ -172,7 +172,7 @@ def launch(args):
     hkl = hostkey_line(hostnames=[], key=ssh_host_key).strip()
     instance_tags = dict(Name=args.hostname, Owner=user_info["iam_username"],
                          SSHHostPublicKeyPart1=hkl[:255], SSHHostPublicKeyPart2=hkl[255:],
-                         OwnerSSHKeyName=ssh_key_name, **dict(args.tags))
+                         OwnerSSHKeyName=ssh_key_name, **dict(args.tags if args.tags else []))
     user_data_args.update(dict(args.cloud_config_data))
     launch_spec = dict(ImageId=args.ami.id,
                        KeyName=ssh_key_name,
