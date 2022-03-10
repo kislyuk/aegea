@@ -1,3 +1,8 @@
+Changes for v4.2.1 (2022-03-09)
+===============================
+
+-  build-ami: correctly ingest tag value from config chain
+
 Changes for v4.2.0 (2022-01-14)
 ===============================
 
