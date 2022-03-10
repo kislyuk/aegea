@@ -1,3 +1,8 @@
+Changes for v4.3.1 (2022-03-09)
+===============================
+
+-  Add default config value for build_ami.tags
+
 Changes for v4.3.0 (2022-03-09)
 ===============================
 
