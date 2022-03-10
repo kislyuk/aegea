@@ -1,3 +1,12 @@
+Changes for v4.3.0 (2022-03-09)
+===============================
+
+-  build-ami: correctly ingest tag value from config chain
+
+   Note that this change necessitates the use of a new syntax for the
+   build_ami.tags section of the YAML config file. Instead of a list of
+   strings, use a mapping.
+
 Changes for v4.2.2 (2022-03-09)
 ===============================
 
