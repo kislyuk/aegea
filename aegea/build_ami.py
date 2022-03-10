@@ -58,7 +58,7 @@ def build_ami(args):
         logger.info("Deleting existing image {}".format(existing_ami))
         existing_ami.deregister()
     image = instance.create_image(Name=args.name, Description=description, BlockDeviceMappings=get_bdm())
-    tags = dict(tag.split("=", 1) for tag in args.tags)
+    tags = dict(tag.split("=", 1) for tag in (args.tags if args.tags else []))
     base_ami = resources.ec2.Image(args.ami)
     tags.update(Owner=ARN.get_iam_username(), AegeaVersion=__version__,
                 Base=base_ami.id, BaseName=base_ami.name, BaseDescription=base_ami.description or "")
@@ -87,7 +87,7 @@ parser.add_argument("--base-ami")
 parser.add_argument("--base-ami-distribution",
                     help="Use AMI for this distribution (examples: Ubuntu:20.04, Amazon Linux:2")
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
-parser.add_argument("--tags", nargs="+", default=[], metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
+parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", help="Tag the resulting AMI with these tags")
 parser.add_argument("--cloud-config-data", type=json.loads)
 parser.add_argument("--cloud-init-timeout-seconds", type=int,
                     help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
