@@ -71,6 +71,7 @@ build_image:
     - ca-certificates
     - apt-transport-https
     - software-properties-common
+    # - bat # only available in 22.04 LTS
 
 build_docker_image:
   base_image: ubuntu:20.04
