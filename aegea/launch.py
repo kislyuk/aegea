@@ -22,7 +22,7 @@ Examples:
     aegea launch my-instance --spot-price 1 --instance-type r5d.xlarge --efs-home
 """
 
-import os, sys, time, datetime, base64, json
+import os, sys, time, datetime, base64, json, argparse
 from typing import Dict, List
 
 import yaml
@@ -111,7 +111,7 @@ def launch(args):
     if args.ubuntu_linux_ami:
         args.ami = locate_ami("Ubuntu", release="20.04", architecture=arch)
     elif args.amazon_linux_ami:
-        args.ami = locate_ami("Amazon Linux", release="2", architecture=arch)
+        args.ami = locate_ami("Amazon Linux", release=str(args.amazon_linux_release), architecture=arch)
     else:
         try:
             if not (args.ami or args.ami_tags or args.ami_tag_keys):
@@ -293,6 +293,7 @@ parser.add_argument("--ami-tag-keys", nargs="+", default=[], metavar="TAG_NAME",
                     help="Use the most recent AMI with these tag names")
 parser.add_argument("--ubuntu-linux-ami", action="store_true", help="Use the most recent Ubuntu Linux LTS AMI")
 parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux 2 AMI")
+parser.add_argument("--amazon-linux-release", help=argparse.SUPPRESS)
 parser.add_argument("--spot", action="store_true",
                     help="Launch a preemptible spot instance, which is cheaper but could be forced to shut down")
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")

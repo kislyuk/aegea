@@ -109,7 +109,7 @@ def describe_cidr(cidr):
         whois_names += [o.get("contact", {}).get("name", "") for o in whois.get("objects", {}).values()]
     except Exception:
         try:
-            whois_names = [socket.gethostbyaddr(address)]
+            whois_names = [socket.gethostbyaddr(address)]  # type: ignore
         except Exception:
             whois_names = [cidr]
     return ", ".join(str(n) for n in whois_names)

@@ -23,11 +23,14 @@ def locate_ami(distribution, release, architecture):
         locate_ami(distribution="Ubuntu", release="20.04", architecture="amd64")
         locate_ami(distribution="Amazon Linux", release="2", architecture="arm64")
     """
-    if distribution == "Amazon Linux" and release == "2":
+    if distribution == "Amazon Linux" and release in {"2", "2022"}:
         if architecture == "amd64":
             architecture = "x86_64"
-        ssm_param_name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{}-gp2".format(architecture)
-        ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
+        ssm_param_names = {
+            "2": f"/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{architecture}-gp2",
+            "2022": f"/aws/service/ami-amazon-linux-latest/al2022-ami-kernel-default-{architecture}"
+        }
+        ami_id = clients.ssm.get_parameters(Names=[ssm_param_names[release]])["Parameters"][0]["Value"]
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return resources.ec2.Image(ami_id)
     elif distribution == "Ubuntu":

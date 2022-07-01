@@ -732,6 +732,7 @@ launch:
     - AmazonElasticFileSystemClientFullAccess
     - AWSOpsWorksCloudWatchLogs
     - AmazonSSMManagedInstanceCore
+  amazon_linux_release: 2
 
 ssh:
   server_alive_interval: 15
