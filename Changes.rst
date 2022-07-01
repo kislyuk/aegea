@@ -1,3 +1,9 @@
+Changes for v4.3.2 (2022-07-01)
+===============================
+
+launch: Add logic to set and discover Amazon Linux 2022 AMI Update
+base_config.yml
+
 Changes for v4.3.1 (2022-03-09)
 ===============================
 
