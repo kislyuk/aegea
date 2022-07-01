@@ -93,12 +93,12 @@ def find_volume_id(mountpoint):
             if mountpoint == mount:
                 break
         else:
-            raise Exception("Mountpoint {} not found in /proc/mounts".format(mountpoint))
+            raise Exception(f"Mountpoint {mountpoint} not found in /proc/mounts")
     for devnode_link in os.listdir("/dev/disk/by-id"):
         if "Elastic_Block_Store" in devnode_link and os.path.realpath("/dev/disk/by-id/" + devnode_link) == devnode:
             break
     else:
-        raise Exception("EBS volume ID not found for mountpoint {} (devnode {})".format(mountpoint, devnode))
+        raise Exception(f"EBS volume ID not found for mountpoint {mountpoint} (devnode {devnode})")
     return re.search(r"Elastic_Block_Store_(vol[\w]+)", devnode_link).group(1).replace("vol", "vol-")
 
 def find_devnode(volume_id):
@@ -111,7 +111,7 @@ def find_devnode(volume_id):
     attachment = resources.ec2.Volume(volume_id).attachments[0]
     if get_metadata("instance-id") == attachment["InstanceId"] and os.path.exists("/dev/" + attachment["Device"]):
         return "/dev/" + attachment["Device"]
-    raise Exception("Could not find devnode for {}".format(volume_id))
+    raise Exception(f"Could not find devnode for {volume_id}")
 
 def get_fs_label(volume_id):
     return "aegv" + volume_id[4:12]
@@ -185,7 +185,7 @@ def detach(args):
                                     Force=args.force)
     clients.ec2.get_waiter("volume_available").wait(VolumeIds=[volume_id])
     if args.delete:
-        logger.info("Deleting EBS volume {}".format(volume_id))
+        logger.info("Deleting EBS volume %s", volume_id)
         clients.ec2.delete_volume(VolumeId=volume_id, DryRun=args.dry_run)
     return res
 parser_detach = register_parser(detach, parent=ebs_parser)

@@ -135,9 +135,9 @@ def history(args):
         if event["name"] == ":":
             event["name"] = ARN(args.execution_arn).resource.split(":", 1)[-1]
         elif "FunctionName" in event["details"].get("parameters", ""):
-            event["name"] += "({})".format(json.loads(event["details"]["parameters"]).get("FunctionName"))
+            event["name"] += f"({json.loads(event['details']['parameters']).get('FunctionName')})"
         elif "JobId" in event["details"].get("output", ""):
-            event["name"] += "({})".format(json.loads(event["details"]["output"]).get("JobId"))
+            event["name"] += f"({json.loads(event['details']['output']).get('JobId')})"
         events.append(event)
     page_output(tabulate(events, args))
 

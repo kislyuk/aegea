@@ -97,14 +97,14 @@ def generate_password(length=16):
 def create_user(args):
     if args.prompt_for_password:
         from getpass import getpass
-        args.password = getpass(prompt="Password for IAM user {}:".format(args.username))
+        args.password = getpass(prompt=f"Password for IAM user {args.username}:")
     else:
         args.password = generate_password()
     try:
         user = resources.iam.create_user(UserName=args.username)
         clients.iam.get_waiter('user_exists').wait(UserName=args.username)
         logger.info("Created new IAM user %s", user)
-        print(BOLD("Generated new password for IAM user {}: {}".format(args.username, args.password)))
+        print(BOLD(f"Generated new password for IAM user {args.username}: {args.password}"))
     except resources.iam.meta.client.exceptions.EntityAlreadyExistsException:
         user = resources.iam.User(args.username)
         logger.info("Updating existing IAM user %s", user)
@@ -113,7 +113,7 @@ def create_user(args):
     except resources.iam.meta.client.exceptions.EntityAlreadyExistsException:
         if args.reset_password:
             clients.iam.update_login_profile(UserName=user.name, Password=args.password, PasswordResetRequired=True)
-            print(BOLD("Generated reset password for IAM user {}: {}".format(args.username, args.password)))
+            print(BOLD(f"Generated reset password for IAM user {args.username}: {args.password}"))
     for group in args.groups:
         try:
             group = resources.iam.create_group(GroupName=group)

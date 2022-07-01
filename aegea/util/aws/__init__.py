@@ -41,7 +41,7 @@ def locate_ami(distribution, release, architecture):
         ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return resources.ec2.Image(ami_id)
-    raise AegeaException("No AMI found for {} {} {}".format(distribution, release, architecture))
+    raise AegeaException(f"No AMI found for {distribution} {release} {architecture}")
 
 def ensure_vpc():
     """
@@ -195,7 +195,7 @@ class S3BucketLifecycleBuilder:
 def ensure_s3_bucket(name=None, policy=None, lifecycle=None, encryption=None):
     from ... import config
     if name is None:
-        name = "aegea-assets-{}".format(ARN.get_account_id())
+        name = f"aegea-assets-{ARN.get_account_id()}"
     bucket = resources.s3.Bucket(name)
     try:
         clients.s3.head_bucket(Bucket=bucket.name)
@@ -293,7 +293,7 @@ def resolve_instance_id(name):
         desc = clients.ec2.describe_instances(Filters=[dict(Name=filter_name, Values=[name])])
         return desc["Reservations"][0]["Instances"][0]["InstanceId"]
     except IndexError:
-        raise AegeaException('Could not resolve "{}" to a known instance'.format(name))
+        raise AegeaException(f'Could not resolve "{name}" to a known instance')
 
 def get_bdm(ami=None, max_devices=12, ebs_storage=None):
     # Note: d2.8xl and hs1.8xl have 24 devices
@@ -303,7 +303,7 @@ def get_bdm(ami=None, max_devices=12, ebs_storage=None):
         if mountpoint == "/":
             rootfs_bdm = resources.ec2.Image(ami).block_device_mappings[0]
             if "Ebs" not in rootfs_bdm or "SnapshotId" not in rootfs_bdm.get("Ebs", []):
-                raise AegeaException("Unable to locate block device mapping for root volume of {}".format(ami))
+                raise AegeaException(f"Unable to locate block device mapping for root volume of {ami}")
             rootfs_bdm["Ebs"]["VolumeSize"] = int(size_gb)
             bdm.insert(0, rootfs_bdm)
         else:
@@ -382,7 +382,7 @@ def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
     get_products_args = dict(ServiceCode=service_code,
                              Filters=[dict(Type="TERM_MATCH", Field=k, Value=v) for k, v in filters])
     cache_key = hashlib.sha256(json.dumps(get_products_args, sort_keys=True).encode()).hexdigest()[:32]
-    service_code_filename = os.path.join(config.user_config_dir, "pricing_cache_{}.json.gz".format(cache_key))
+    service_code_filename = os.path.join(config.user_config_dir, f"pricing_cache_{cache_key}.json.gz")
     try:
         cache_date = datetime.fromtimestamp(os.path.getmtime(service_code_filename))
         if cache_date < datetime.now() - timedelta(days=max_cache_age_days):
@@ -465,7 +465,7 @@ def resolve_log_group(name):
         if log_group["logGroupName"] == name:
             return log_group
     else:
-        raise AegeaException("Log group {} not found".format(name))
+        raise AegeaException(f"Log group {name} not found")
 
 def ensure_log_group(name):
     try:

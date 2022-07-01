@@ -196,7 +196,7 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
             logger.warn("No bastion host found for %s, trying direct connection", instance.private_ip_address)
             return [], username + "@" + instance.public_dns_name
         else:
-            raise AegeaException("No bastion host or public route found for {}".format(instance))
+            raise AegeaException(f"No bastion host or public route found for {instance}")
     else:
         if instance.key_name is not None:
             add_ssh_key_to_agent(instance.key_name)
@@ -220,8 +220,8 @@ def init_ssm(instance_id):
     return ["-o", "ProxyCommand=aws ssm start-session --document-name AWS-StartSSHSession --target " + instance_id]
 
 def ssh(args):
-    ssh_opts = ["-o", "ServerAliveInterval={}".format(args.server_alive_interval)]
-    ssh_opts += ["-o", "ServerAliveCountMax={}".format(args.server_alive_count_max)]
+    ssh_opts = ["-o", f"ServerAliveInterval={args.server_alive_interval}"]
+    ssh_opts += ["-o", f"ServerAliveCountMax={args.server_alive_count_max}"]
     ssh_opts += extract_passthrough_opts(args, "ssh")
     prefix, at, name = args.name.rpartition("@")
 

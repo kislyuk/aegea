@@ -223,7 +223,7 @@ def launch(args):
                     spot_fleet_builder = InstanceSpotFleetBuilder(**spot_fleet_args)  # type: SpotFleetBuilder
                 else:
                     spot_fleet_builder = SpotFleetBuilder(**spot_fleet_args)
-                logger.info("Launching {}".format(spot_fleet_builder))
+                logger.info("Launching %s", spot_fleet_builder)
                 sfr_id = spot_fleet_builder()
                 instances = []  # type: List[Dict]
                 while not instances:
@@ -236,7 +236,7 @@ def launch(args):
             else:
                 if args.spot_price is None:
                     args.spot_price = get_spot_bid_price(args.instance_type)
-                logger.info("Bidding ${}/hour for a {} spot instance".format(args.spot_price, args.instance_type))
+                logger.info(f"Bidding ${args.spot_price}/hour for a {args.instance_type} spot instance")
                 res = clients.ec2.request_spot_instances(
                     SpotPrice=str(args.spot_price),
                     ValidUntil=datetime.datetime.utcnow() + datetime.timedelta(hours=1),

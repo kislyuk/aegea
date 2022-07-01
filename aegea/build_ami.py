@@ -11,7 +11,7 @@ from .launch import launch, parser as launch_parser
 
 def build_ami(args):
     if args.name is None:
-        args.name = "aegea-{}-{}".format(args.architecture, time.strftime("%Y-%m-%d-%H-%M"))
+        args.name = f"aegea-{args.architecture}-{time.strftime('%Y-%m-%d-%H-%M')}"
     for key, value in config.build_image.items():
         getattr(args, key).extend(value)
     if args.instance_type is None:
@@ -25,12 +25,12 @@ def build_ami(args):
             args.ami = locate_ami(distribution=distribution, release=release, architecture=args.architecture).id
         else:
             args.ami = args.base_ami
-        hostname = "{}-{}-{}".format(__name__, args.name, int(time.time())).replace(".", "-").replace("_", "-")
+        hostname = f"{__name__}-{args.name}-{int(time.time())}".replace(".", "-").replace("_", "-")
         launch_args = launch_parser.parse_args(args=[hostname], namespace=copy.deepcopy(args))
         launch_args.iam_role = args.iam_role
         launch_args.cloud_config_data.update(rootfs_skel_dirs=get_rootfs_skel_dirs(args))
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
-    sys.stderr.write("Waiting {} seconds for cloud-init ...".format(args.cloud_init_timeout_seconds))
+    sys.stderr.write(f"Waiting {args.cloud_init_timeout_seconds} seconds for cloud-init ...")
     sys.stderr.flush()
 
     def wait():
@@ -51,11 +51,11 @@ def build_ami(args):
             else:
                 raise
     else:
-        raise AegeaException("cloud-init encountered errors; please examine and terminate {}".format(instance))
+        raise AegeaException(f"cloud-init encountered errors; please examine and terminate {instance}")
     sys.stderr.write(GREEN("OK") + "\n")
-    description = "Built by {} for {}".format(__name__, ARN.get_iam_username())
+    description = f"Built by {__name__} for {ARN.get_iam_username()}"
     for existing_ami in resources.ec2.images.filter(Owners=["self"], Filters=[{"Name": "name", "Values": [args.name]}]):
-        logger.info("Deleting existing image {}".format(existing_ami))
+        logger.info(f"Deleting existing image {existing_ami}")
         existing_ami.deregister()
     image = instance.create_image(Name=args.name, Description=description, BlockDeviceMappings=get_bdm())
     tags = dict(args.tags)

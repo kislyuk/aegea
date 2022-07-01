@@ -43,7 +43,7 @@ class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
         default = _get_config_for_prog(self._prog).get(action.dest)
         # Avoid printing defaults for list and store_false actions, since they are confusing.
         if default is not None and not isinstance(default, list) and "StoreFalse" not in action.__class__.__name__:
-            return action.help + " (default: {})".format(default)
+            return action.help + f" (default: {default})"
         return action.help
 
 def initialize():
@@ -61,7 +61,7 @@ def initialize():
             logger.error("Error writing user config file %s: %s", config.user_config_file, e)
 
     parser = argparse.ArgumentParser(
-        description="{}: {}".format(BOLD() + RED() + __name__.capitalize() + ENDC(), fill(__doc__.strip())),
+        description=f"{BOLD() + RED() + __name__.capitalize() + ENDC()}: {fill(__doc__.strip())}",
         formatter_class=AegeaHelpFormatter
     )
     parser.add_argument("--version", action="version", version="%(prog)s {}\n{}\n{}\n{} {}\n{}".format(

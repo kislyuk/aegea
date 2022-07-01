@@ -95,7 +95,7 @@ def get_command_and_env(args):
                     efs_id = filesystem["FileSystemId"]
                     break
             else:
-                raise AegeaException('Could not resolve "{}" to a valid EFS filesystem ID'.format(efs_id))
+                raise AegeaException(f'Could not resolve "{efs_id}" to a valid EFS filesystem ID')
         mount_targets = clients.efs.describe_mount_targets(FileSystemId=efs_id)["MountTargets"]
         args.environment.append(dict(name="AEGEA_EFS_DESC", value=json.dumps(mount_targets)))
         commands = efs_vol_shellcode.format(efs_mountpoint=args.efs_storage, efs_id=efs_id).splitlines()
@@ -142,7 +142,7 @@ def get_command_and_env(args):
     return args.command, args.environment
 
 def get_ecr_image_uri(tag):
-    return "{}.dkr.ecr.{}.amazonaws.com/{}".format(ARN.get_account_id(), ARN.get_region(), tag)
+    return f"{ARN.get_account_id()}.dkr.ecr.{ARN.get_region()}.amazonaws.com/{tag}"
 
 def ensure_ecr_image(tag):
     pass
@@ -175,7 +175,7 @@ def get_volumes_and_mountpoints(args):
 
 def ensure_job_definition(args):
     def get_jd_arn_and_job_name(jd_res):
-        job_name = args.name or "{}_{}".format(jd_res["jobDefinitionName"], jd_res["revision"])
+        job_name = args.name or f"{jd_res['jobDefinitionName']}_{jd_res['revision']}"
         return jd_res["jobDefinitionArn"], job_name
 
     if args.ecs_image:
