@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import os, sys, glob, subprocess, textwrap, setuptools
+import glob
+import os
+import subprocess
+import sys
+import textwrap
+
+import setuptools
 
 setuptools.setup(
     name="aegea",
@@ -13,10 +19,10 @@ setuptools.setup(
     use_scm_version={
         "write_to": "aegea/version.py",
     },
-    setup_requires=['setuptools_scm >= 3.4.3'],
+    setup_requires=["setuptools_scm >= 3.4.3"],
     install_requires=[
         "boto3 >= 1.20.35, < 2",
-        "argcomplete >= 1.9.5, < 2",
+        "argcomplete >= 1.9.5, < 3",
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
         "tweak >= 1.0.4, < 2",
@@ -25,16 +31,12 @@ setuptools.setup(
         "babel >= 2.4.0, < 3",
         "ipwhois >= 1.1.0, < 2",
         "uritemplate >= 3.0.0, < 4",
-        "chalice >= 1.21.7, < 2"
+        "chalice >= 1.21.7, < 2",
     ],
-    tests_require=[
-        "coverage",
-        "flake8",
-        "mypy"
-    ],
+    tests_require=["coverage", "flake8", "mypy"],
     packages=setuptools.find_packages(exclude=["test"]),
     scripts=glob.glob("scripts/*"),
     platforms=["MacOS X", "Posix"],
     test_suite="test",
-    include_package_data=True
+    include_package_data=True,
 )
