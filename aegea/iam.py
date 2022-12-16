@@ -3,11 +3,11 @@ Manage IAM users, groups, roles, and policies
 """
 
 import argparse
-import collections
 import os
 import random
 import string
 import sys
+from collections.abc import Mapping
 
 import botocore
 
@@ -26,7 +26,7 @@ iam_parser = register_parser(iam)
 def configure(args):
     for group, policies in config.managed_iam_groups.items():
         print("Creating group", group)
-        formatted_policies = [(IAMPolicyBuilder(**p) if isinstance(p, collections.Mapping) else p) for p in policies]
+        formatted_policies = [(IAMPolicyBuilder(**p) if isinstance(p, Mapping) else p) for p in policies]
         ensure_iam_group(group, policies=formatted_policies)
         msg = 'Created group {g}. Use the AWS console or "aws iam add-user-to-group --user-name USER --group-name {g}" to add users to it.' # noqa
         print(BOLD(msg.format(g=group)))
