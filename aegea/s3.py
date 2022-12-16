@@ -1,17 +1,21 @@
-import os, sys, argparse, json
-from datetime import datetime, timedelta
+import argparse
+import json
+import os
+import sys
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
-from typing import Dict, Any
 
-from . import register_parser, logger
-from .ls import filter_collection, register_listing_parser, register_filtering_parser
+from . import logger, register_parser
+from .ls import filter_collection, register_filtering_parser, register_listing_parser
 from .util import ThreadPoolExecutor
-from .util.aws import ARN, resources, clients, expect_error_codes, get_cloudwatch_metric_stats
-from .util.printing import page_output, tabulate, format_number
+from .util.aws import ARN, clients, expect_error_codes, get_cloudwatch_metric_stats, resources
 from .util.exceptions import AegeaException
+from .util.printing import format_number, page_output, tabulate
+
 
 def s3(args):
     s3_parser.print_help()

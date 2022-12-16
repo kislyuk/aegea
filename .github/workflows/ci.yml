@@ -38,3 +38,7 @@ jobs:
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
         make test
     - uses: codecov/codecov-action@v3
+  isort:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: isort/isort-action@v1.1.0

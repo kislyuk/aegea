@@ -38,19 +38,23 @@ You can also manually trigger a rebuild with a service reload:
 
 """
 
-import os, sys, json, argparse
+import argparse
+import json
+import os
+import sys
 from datetime import datetime, timedelta
 from functools import lru_cache
 
-from dateutil.tz import tzutc
 from botocore.exceptions import ClientError
+from dateutil.tz import tzutc
 
-from . import register_parser, logger, secrets
-from .util.git import parse_repo_name, get_repo, private_submodules
-from .util.crypto import key_fingerprint
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate, BOLD
-from .util.aws import ARN, resources, clients, resolve_instance_id, get_iam_role_for_instance, expect_error_codes
+from . import logger, register_parser, secrets
+from .util.aws import ARN, clients, expect_error_codes, get_iam_role_for_instance, resolve_instance_id, resources
 from .util.aws.iam import IAMPolicyBuilder, ensure_iam_policy
+from .util.crypto import key_fingerprint
+from .util.git import get_repo, parse_repo_name, private_submodules
+from .util.printing import BOLD, format_table, get_cell, get_field, page_output, tabulate
+
 
 def deploy(args):
     deploy_parser.print_help()

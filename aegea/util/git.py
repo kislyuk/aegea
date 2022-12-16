@@ -1,5 +1,6 @@
 import os
 
+
 class GitHub:
     _session = None
 

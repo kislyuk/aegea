@@ -2,15 +2,21 @@
 Manage IAM users, groups, roles, and policies
 """
 
-import os, sys, argparse, collections, random, string
+import argparse
+import collections
+import os
+import random
+import string
+import sys
 
 import botocore
 
 from . import config, logger
-from .ls import register_parser, register_listing_parser
-from .util.printing import page_output, tabulate, BOLD
-from .util.aws import resources, clients
-from .util.aws.iam import ensure_iam_group, IAMPolicyBuilder
+from .ls import register_listing_parser, register_parser
+from .util.aws import clients, resources
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_group
+from .util.printing import BOLD, page_output, tabulate
+
 
 def iam(args):
     iam_parser.print_help()

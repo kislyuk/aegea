@@ -1,10 +1,13 @@
-import os, sys, copy
-from typing import List, Dict, Any
+import copy
+import os
+import sys
+from typing import Any, Dict, List
 
 from . import register_parser
-from .util import paginate, describe_cidr
-from .util.printing import page_output, tabulate, GREEN, BLUE
-from .util.aws import resolve_instance_id, resources, clients
+from .util import describe_cidr, paginate
+from .util.aws import clients, resolve_instance_id, resources
+from .util.printing import BLUE, GREEN, page_output, tabulate
+
 
 def column_completer(parser, **kwargs):
     resource = getattr(resources, parser.get_default("resource"))

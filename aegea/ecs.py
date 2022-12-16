@@ -2,25 +2,39 @@
 Manage AWS Elastic Container Service (ECS) resources, including Fargate tasks.
 """
 
-import os, sys, argparse, time, json, hashlib
-from itertools import product
+import argparse
+import hashlib
+import json
+import os
+import sys
+import time
 from functools import partial
+from itertools import product
 from typing import Dict, List
 
 from botocore.exceptions import ClientError
 
 from . import logger
 from .batch import add_command_args, add_job_defn_args, print_event
-from .ls import register_parser, register_listing_parser
+from .ls import register_listing_parser, register_parser
 from .ssh import ssh_to_ecs_container
-from .util import Timestamp, paginate, ThreadPoolExecutor
-from .util.exceptions import AegeaException
-from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
-from .util.aws import (ARN, clients, ensure_security_group, ensure_vpc, ensure_log_group,
-                       ensure_ecs_cluster, expect_error_codes, encode_tags)
+from .util import ThreadPoolExecutor, Timestamp, paginate
+from .util.aws import (
+    ARN,
+    clients,
+    encode_tags,
+    ensure_ecs_cluster,
+    ensure_log_group,
+    ensure_security_group,
+    ensure_vpc,
+    expect_error_codes,
+)
+from .util.aws.batch import get_command_and_env, get_ecr_image_uri, get_volumes_and_mountpoints, set_ulimits
+from .util.aws.iam import ensure_fargate_execution_role, ensure_iam_role
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import get_command_and_env, set_ulimits, get_volumes_and_mountpoints, get_ecr_image_uri
-from .util.aws.iam import ensure_iam_role, ensure_fargate_execution_role
+from .util.exceptions import AegeaException
+from .util.printing import BOLD, ENDC, GREEN, RED, YELLOW, page_output, tabulate
+
 
 def complete_cluster_name(**kwargs):
     return [ARN(c).resource.partition("/")[2] for c in paginate(clients.ecs.get_paginator("list_clusters"))]

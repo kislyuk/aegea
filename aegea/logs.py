@@ -22,18 +22,28 @@ Run the same search, but retrieve 10 lines of context for each match:
     aegea grep STRING LOG_GROUP --start-time=-1w -C 10
 """
 
-import os, sys, json, hashlib, time
+import hashlib
+import json
+import os
+import sys
+import time
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Dict
 
-from . import register_parser, logger
-from .util import Timestamp, paginate, add_time_bound_args, ThreadPoolExecutor
+from . import logger, register_parser
+from .util import ThreadPoolExecutor, Timestamp, add_time_bound_args, paginate
+from .util.aws import clients
+from .util.aws.logs import (
+    export_and_print_log_events,
+    export_log_files,
+    print_log_event,
+    print_log_event_with_context,
+    print_log_events,
+)
 from .util.exceptions import AegeaException
 from .util.printing import page_output, tabulate
-from .util.aws import clients
-from .util.aws.logs import (export_log_files, export_and_print_log_events, print_log_events, print_log_event,
-                            print_log_event_with_context)
+
 
 def log_group_completer(prefix, **kwargs):
     describe_log_groups_args = dict(logGroupNamePrefix=prefix) if prefix else dict()

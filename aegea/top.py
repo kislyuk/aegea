@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from datetime import datetime
 from typing import List
 
@@ -8,6 +9,7 @@ import botocore.exceptions
 from . import register_parser
 from .util import ThreadPoolExecutor
 from .util.printing import format_table, page_output
+
 
 def get_stats_for_region(region):
     try:

@@ -7,10 +7,11 @@ Use ``aws ecr create-repository`` and ``aws ecr delete-repository`` to manage EC
 import json
 from typing import Dict, List
 
-from .ls import register_parser, register_listing_parser
+from .ls import register_listing_parser, register_parser
 from .util import paginate
+from .util.aws import ARN, AegeaException, clients
 from .util.printing import page_output, tabulate
-from .util.aws import clients, AegeaException, ARN
+
 
 def ecr(args):
     ecr_parser.print_help()

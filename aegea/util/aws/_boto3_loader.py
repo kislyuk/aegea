@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 class Loader:
     cache = dict(resource={}, client={})  # type: Dict[str, Any]

@@ -7,18 +7,26 @@ generate. After generation, view reports with ``aegea billing ls``. See ``aegea 
 Reports can also be configured and viewed at https://console.aws.amazon.com/billing/home.
 """
 
-import os, sys, json, zipfile, gzip, csv, io, argparse
-from io import BytesIO, TextIOWrapper
+import argparse
+import csv
+import gzip
+import io
+import json
+import os
+import sys
+import zipfile
 from datetime import datetime, timedelta
+from io import BytesIO, TextIOWrapper
 
 import dateutil
 from botocore.exceptions import ClientError
 
-from . import register_parser, config
-from .util.exceptions import AegeaException
-from .util.printing import format_table, page_output, get_field, get_cell, tabulate
-from .util.aws import ARN, clients, resources, ensure_s3_bucket
+from . import config, register_parser
+from .util.aws import ARN, clients, ensure_s3_bucket, resources
 from .util.aws.iam import IAMPolicyBuilder
+from .util.exceptions import AegeaException
+from .util.printing import format_table, get_cell, get_field, page_output, tabulate
+
 
 def billing(args):
     billing_parser.print_help()

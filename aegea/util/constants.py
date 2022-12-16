@@ -1,5 +1,6 @@
-import os, json
-from typing import Dict, Any
+import json
+import os
+from typing import Any, Dict
 
 _constants_filename = os.path.join(os.path.dirname(__file__), "..", "constants.json")
 _constants = {}  # type: Dict[str, Any]

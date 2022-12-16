@@ -1,12 +1,19 @@
-import os, sys, time, hashlib, json, gzip, re
+import gzip
+import hashlib
+import json
+import os
+import re
+import sys
+import time
 from datetime import datetime
 
 import requests
 
 from ... import logger
-from .. import Timestamp, paginate, ThreadPoolExecutor
-from . import ARN, S3BucketLifecycleBuilder, ensure_s3_bucket, clients
+from .. import ThreadPoolExecutor, Timestamp, paginate
+from . import ARN, S3BucketLifecycleBuilder, clients, ensure_s3_bucket
 from .iam import IAMPolicyBuilder
+
 
 class CloudwatchLogReader:
     def __init__(self, log_stream_name, log_group_name="/aws/batch/job", head=None, tail=None):

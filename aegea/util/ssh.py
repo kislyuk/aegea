@@ -1,6 +1,11 @@
-import os, sys, errno
+import errno
+import os
+import sys
+
 from paramiko import SSHClient
+
 from .. import logger
+
 
 class AegeaSSHClient(SSHClient):
     def check_call(self, *args, **kwargs):

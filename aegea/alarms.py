@@ -1,9 +1,11 @@
-import os, sys
+import os
+import sys
 
 from . import register_parser
 from .ls import register_listing_parser
+from .util.aws import ARN, clients, resolve_instance_id, resources
 from .util.printing import page_output, tabulate
-from .util.aws import ARN, resolve_instance_id, resources, clients
+
 
 def alarms(args):
     page_output(tabulate(resources.cloudwatch.alarms.all(), args))

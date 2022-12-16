@@ -1,13 +1,20 @@
-import os, sys, json, time, base64, copy
+import base64
+import copy
+import json
+import os
+import sys
+import time
 from io import open
 
-from . import register_parser, logger, config, __version__
-from .util.aws import locate_ami, add_tags, get_bdm, resolve_instance_id, resources, clients, ARN, AegeaException
+from . import __version__, config, logger, register_parser
+from .launch import launch
+from .launch import parser as launch_parser
+from .util.aws import ARN, AegeaException, add_tags, clients, get_bdm, locate_ami, resolve_instance_id, resources
 from .util.aws.ssm import run_command
 from .util.cloudinit import get_rootfs_skel_dirs
 from .util.crypto import ensure_ssh_key, get_ssh_key_path
 from .util.printing import GREEN
-from .launch import launch, parser as launch_parser
+
 
 def build_ami(args):
     if args.name is None:

@@ -22,26 +22,51 @@ Examples:
     aegea launch my-instance --spot-price 1 --instance-type r5d.xlarge --efs-home
 """
 
-import os, sys, time, datetime, base64, json, argparse
+import argparse
+import base64
+import datetime
+import json
+import os
+import sys
+import time
 from typing import Dict, List
 
 import yaml
-
-from . import register_parser, logger, config
-from .efs import create as create_efs, parser_create as parser_create_efs, __name__ as efs_security_group_name
-from .ssh import get_user_info
-from .util import wait_for_port, validate_hostname, paginate
-from .util.cloudinit import get_user_data, get_rootfs_skel_dirs
-from .util.aws import (ensure_vpc, ensure_subnet, ensure_security_group, ensure_log_group,
-                       add_tags, resolve_security_group, get_bdm, resolve_instance_id, expect_error_codes, resolve_ami,
-                       locate_ami, get_ondemand_price_usd, resources, clients, ARN, instance_type_completer,
-                       get_ssm_parameter, encode_tags)
-from .util.aws.dns import DNSZone, get_client_token
-from .util.aws.spot import SpotFleetBuilder
-from .util.aws.iam import ensure_instance_profile, compose_managed_policies
-from .util.crypto import new_ssh_key, add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line
-from .util.exceptions import AegeaException
 from botocore.exceptions import ClientError, WaiterError
+
+from . import config, logger, register_parser
+from .efs import __name__ as efs_security_group_name
+from .efs import create as create_efs
+from .efs import parser_create as parser_create_efs
+from .ssh import get_user_info
+from .util import paginate, validate_hostname, wait_for_port
+from .util.aws import (
+    ARN,
+    add_tags,
+    clients,
+    encode_tags,
+    ensure_log_group,
+    ensure_security_group,
+    ensure_subnet,
+    ensure_vpc,
+    expect_error_codes,
+    get_bdm,
+    get_ondemand_price_usd,
+    get_ssm_parameter,
+    instance_type_completer,
+    locate_ami,
+    resolve_ami,
+    resolve_instance_id,
+    resolve_security_group,
+    resources,
+)
+from .util.aws.dns import DNSZone, get_client_token
+from .util.aws.iam import compose_managed_policies, ensure_instance_profile
+from .util.aws.spot import SpotFleetBuilder
+from .util.cloudinit import get_rootfs_skel_dirs, get_user_data
+from .util.crypto import add_ssh_host_key_to_known_hosts, ensure_ssh_key, hostkey_line, new_ssh_key
+from .util.exceptions import AegeaException
+
 
 def get_spot_bid_price(instance_type, ondemand_multiplier=1.2):
     ondemand_price = get_ondemand_price_usd(clients.ec2.meta.region_name, instance_type)

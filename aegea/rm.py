@@ -8,12 +8,17 @@ arn:aws:iam::123456789012:user/foo.
 EC2 key pairs have no ARNs and no distingiushing ID prefix. To delete them by name, use the --key-pair option.
 """
 
-import os, sys, argparse, subprocess, time
+import argparse
+import os
+import subprocess
+import sys
+import time
 
 from botocore.exceptions import ClientError
 
-from . import register_parser, logger
-from .util.aws import expect_error_codes, resources, clients, paginate
+from . import logger, register_parser
+from .util.aws import clients, expect_error_codes, paginate, resources
+
 
 def delete_vpc(name, args):
     vpc = resources.ec2.Vpc(name)

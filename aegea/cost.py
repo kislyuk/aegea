@@ -1,12 +1,17 @@
-import os, sys, json, collections
+import collections
+import json
+import os
+import sys
 from datetime import datetime, timedelta
 
-import boto3, requests
+import boto3
+import requests
 
 from . import register_parser
-from .util import paginate, Timestamp
-from .util.printing import format_table, page_output, tabulate, format_datetime
-from .util.aws import region_name, offers_api, clients, instance_type_completer, get_products
+from .util import Timestamp, paginate
+from .util.aws import clients, get_products, instance_type_completer, offers_api, region_name
+from .util.printing import format_datetime, format_table, page_output, tabulate
+
 
 def format_float(f):
     try:

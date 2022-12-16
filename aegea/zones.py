@@ -2,13 +2,16 @@
 Utilities to manage AWS Route 53 DNS zones and records.
 """
 
-import os, sys, argparse
+import argparse
+import os
+import sys
 
 from . import register_parser
 from .util import paginate
 from .util.aws import clients
 from .util.aws.dns import DNSZone
-from .util.printing import get_field, page_output, format_table
+from .util.printing import format_table, get_field, page_output
+
 
 def zones(args):
     zones_parser.print_help()

@@ -1,18 +1,29 @@
-import os, sys, json, io, gzip, time, socket, hashlib, uuid
-import requests
-from warnings import warn
+import gzip
+import hashlib
+import io
+import json
+import os
+import socket
+import sys
+import time
+import uuid
 from datetime import datetime, timedelta
 from ipaddress import ip_network
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+from warnings import warn
 
-import boto3, botocore.session
+import boto3
+import botocore.session
+import requests
 from botocore.exceptions import ClientError
-from botocore.utils import parse_to_aware_datetime, InstanceMetadataFetcher as IMDS
+from botocore.utils import InstanceMetadataFetcher as IMDS
+from botocore.utils import parse_to_aware_datetime
 
 from ... import logger
 from .. import paginate
 from ..exceptions import AegeaException
 from . import clients, resources
+
 
 def get_ssm_parameter(name):
     return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
@@ -455,7 +466,7 @@ def get_public_ip_ranges(service="AMAZON", region=None):
     return [r for r in ranges if r["service"] == service and r["region"] == region]
 
 def make_waiter(op, path, expected, matcher="path", delay=1, max_attempts=30):
-    from botocore.waiter import Waiter, SingleWaiterConfig
+    from botocore.waiter import SingleWaiterConfig, Waiter
     acceptor = dict(matcher=matcher, argument=path, expected=expected, state="success")
     waiter_cfg = dict(operation=op.__name__, delay=delay, maxAttempts=max_attempts, acceptors=[acceptor])
     return Waiter(op.__name__, SingleWaiterConfig(waiter_cfg), op)

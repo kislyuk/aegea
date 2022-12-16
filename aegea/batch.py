@@ -2,27 +2,50 @@
 Manage AWS Batch jobs, queues, and compute environments.
 """
 
-import os, sys, argparse, base64, collections, io, subprocess, json, time, re, hashlib, itertools
+import argparse
+import base64
+import collections
+import hashlib
+import io
+import itertools
+import json
+import os
+import re
+import subprocess
+import sys
+import time
 from typing import List
 
 from botocore.exceptions import ClientError
 
 from . import config, logger
-from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
+from .ls import register_listing_parser, register_parser
 from .ssh import ssh_to_ecs_container
-from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
-from .util.crypto import ensure_ssh_key
-from .util.cloudinit import get_user_data
-from .util.exceptions import AegeaException
-from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
-from .util.aws import (resources, clients, make_waiter, ensure_vpc,
-                       ensure_security_group, ensure_log_group, resolve_ami, instance_type_completer,
-                       expect_error_codes, instance_storage_shellcode, ARN, get_ssm_parameter)
-from .util.aws.spot import SpotFleetBuilder
+from .util import ThreadPoolExecutor, Timestamp, get_mkfs_command, paginate
+from .util.aws import (
+    ARN,
+    clients,
+    ensure_log_group,
+    ensure_security_group,
+    ensure_vpc,
+    expect_error_codes,
+    get_ssm_parameter,
+    instance_storage_shellcode,
+    instance_type_completer,
+    make_waiter,
+    resolve_ami,
+    resources,
+)
+from .util.aws.batch import ensure_job_definition, ensure_lambda_helper, get_command_and_env
+from .util.aws.iam import IAMPolicyBuilder, ensure_fargate_execution_role, ensure_iam_role, ensure_instance_profile
 from .util.aws.logs import CloudwatchLogReader
-from .util.aws.batch import ensure_job_definition, get_command_and_env, ensure_lambda_helper
-from .util.aws.iam import IAMPolicyBuilder, ensure_iam_role, ensure_instance_profile, ensure_fargate_execution_role
+from .util.aws.spot import SpotFleetBuilder
+from .util.cloudinit import get_user_data
+from .util.crypto import ensure_ssh_key
+from .util.exceptions import AegeaException
+from .util.printing import BOLD, ENDC, GREEN, RED, YELLOW, page_output, tabulate
+
 
 def complete_queue_name(**kwargs):
     return [q["jobQueueName"] for q in paginate(clients.batch.get_paginator("describe_job_queues"))]

@@ -1,10 +1,17 @@
-import os, sys, json, shutil, subprocess, re, errno
+import errno
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
 from datetime import datetime, timedelta
 from shutil import get_terminal_size
 
 import botocore
 
-from .exceptions import GetFieldError, AegeaException
+from .exceptions import AegeaException, GetFieldError
+
 
 def CYAN(message=None):
     if message is None:
@@ -196,8 +203,8 @@ def get_field(item, field):
     return item
 
 def format_datetime(d):
-    from dateutil.tz import tzutc
     from babel import dates
+    from dateutil.tz import tzutc
     d = d.replace(microsecond=0)
     # Switch from UTC to local TZ
     d = d.astimezone(tz=None)

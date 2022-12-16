@@ -1,14 +1,22 @@
-import os, sys, io, json, base64, hashlib, argparse, tempfile, shutil
-from typing import Dict, Any
+import argparse
+import base64
+import hashlib
+import io
+import json
+import os
+import shutil
+import sys
+import tempfile
+from typing import Any, Dict
 
 import yaml
 from botocore.exceptions import ClientError
 from botocore.paginate import Paginator
 
 from ... import __version__
+from .. import get_mkfs_command, logger, paginate
 from ..exceptions import AegeaException
-from .. import paginate, get_mkfs_command, logger
-from . import ARN, resources, clients, expect_error_codes, ensure_s3_bucket, instance_storage_shellcode
+from . import ARN, clients, ensure_s3_bucket, expect_error_codes, instance_storage_shellcode, resources
 from .iam import ensure_iam_role
 
 bash_cmd_preamble = ["/bin/bash", "-c", 'for i in "$@"; do eval "$i"; done; cd /', __name__]

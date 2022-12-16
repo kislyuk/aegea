@@ -2,17 +2,21 @@
 Manage AWS Step Functions state machines and executions.
 """
 
-import os, sys, argparse, json, time
-from typing import Set, Dict, Any
+import argparse
+import json
+import os
+import sys
+import time
+from typing import Any, Dict, Set
 
 from botocore.exceptions import ClientError
 
 from . import batch, logger
-from .ls import register_parser, register_listing_parser
 from .ecr import ecr_image_name_completer
-from .util import Timestamp, paginate, get_mkfs_command, ThreadPoolExecutor
-from .util.aws import clients, ARN
-from .util.printing import page_output, tabulate, YELLOW, RED, GREEN, BOLD, ENDC
+from .ls import register_listing_parser, register_parser
+from .util import ThreadPoolExecutor, Timestamp, get_mkfs_command, paginate
+from .util.aws import ARN, clients
+from .util.printing import BOLD, ENDC, GREEN, RED, YELLOW, page_output, tabulate
 
 sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
                          FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())

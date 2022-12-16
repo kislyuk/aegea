@@ -2,12 +2,17 @@
 Manage AWS Lambda functions and their event sources
 """
 
-import os, sys, argparse, hashlib, base64
+import argparse
+import base64
+import hashlib
+import os
+import sys
 
-from .ls import register_parser, register_listing_parser
+from .ls import register_listing_parser, register_parser
 from .util import Timestamp, paginate
+from .util.aws import clients, resources
 from .util.printing import page_output, tabulate
-from .util.aws import resources, clients
+
 
 def _lambda(args):
     lambda_parser.print_help()

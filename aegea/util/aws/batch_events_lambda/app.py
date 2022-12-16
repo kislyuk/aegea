@@ -4,10 +4,10 @@ records job descriptions, so they can be referenced later when they disappear fr
 
 Fields like "command" and "environment" are redacted to avoid storing potentially sensitive information.
 """
-import os
 import json
-import boto3
+import os
 
+import boto3
 from chalice import Chalice
 
 s3 = boto3.resource("s3")

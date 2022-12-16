@@ -1,7 +1,10 @@
-import os, sys
+import os
+import sys
+
 from . import register_parser
-from .util.aws import resources, clients, resolve_instance_id, add_tags
+from .util.aws import add_tags, clients, resolve_instance_id, resources
 from .util.aws.dns import DNSZone
+
 
 def resolve_instance_ids(input_names):
     ids = [n for n in input_names if n.startswith("i-")]

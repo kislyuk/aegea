@@ -1,9 +1,13 @@
-import os, sys, binascii, subprocess
+import binascii
+import os
+import subprocess
+import sys
 
 from botocore.exceptions import ClientError
 
 from .. import logger
-from .aws import resources, expect_error_codes
+from .aws import expect_error_codes, resources
+
 
 def new_ssh_key(bits=2048):
     from paramiko import RSAKey

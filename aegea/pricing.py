@@ -1,13 +1,18 @@
-import os, sys, json, re
+import json
+import os
+import re
+import sys
 from datetime import datetime, timedelta
 from statistics import median
 
-import boto3, requests
+import boto3
+import requests
 
 from . import register_parser
-from .util import paginate, Timestamp
-from .util.printing import format_table, page_output, tabulate, format_datetime
-from .util.aws import region_name, offers_api, clients, instance_type_completer, get_products
+from .util import Timestamp, paginate
+from .util.aws import clients, get_products, instance_type_completer, offers_api, region_name
+from .util.printing import format_datetime, format_table, page_output, tabulate
+
 
 def describe_services():
     client = boto3.client("pricing", region_name="us-east-1")

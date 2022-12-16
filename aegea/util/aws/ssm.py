@@ -1,11 +1,20 @@
-import os, sys, io, stat, shutil, platform, subprocess, tempfile, zipfile, time
+import io
+import os
+import platform
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+import zipfile
 
 import boto3
 
-from ... import logger, config
+from ... import config, logger
 from .. import Timestamp
 from ..exceptions import AegeaException
-from . import resolve_instance_id, resources, clients, ARN, paginate
+from . import ARN, clients, paginate, resolve_instance_id, resources
 from .logs import CloudwatchLogReader
 
 sm_plugin_bucket = "session-manager-downloads"

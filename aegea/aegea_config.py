@@ -5,8 +5,9 @@ List, read, and write Aegea configuration parameters.
 import json
 from typing import List
 
-from .ls import register_parser, register_listing_parser
-from .util.printing import page_output, format_table
+from .ls import register_listing_parser, register_parser
+from .util.printing import format_table, page_output
+
 
 def configure(args):
     configure_parser.print_help()

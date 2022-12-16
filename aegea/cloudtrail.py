@@ -5,9 +5,10 @@ import json
 from datetime import datetime
 
 from . import register_parser
-from .util import paginate, add_time_bound_args, Timestamp
-from .util.printing import page_output, tabulate, GREEN, BLUE
-from .util.aws import ARN, resolve_instance_id, resources, clients
+from .util import Timestamp, add_time_bound_args, paginate
+from .util.aws import ARN, clients, resolve_instance_id, resources
+from .util.printing import BLUE, GREEN, page_output, tabulate
+
 
 def cloudtrail(args):
     cloudtrail_parser.print_help()

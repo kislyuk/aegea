@@ -5,13 +5,25 @@ For general help, run ``aegea help`` or visit https://github.com/kislyuk/aegea/w
 For help with individual commands, run ``aegea <command> --help``.
 """
 
-import os, sys, argparse, logging, shutil, json, datetime, traceback, errno, warnings, platform
-from textwrap import fill
-from typing import Dict, Any
-
-import tweak, boto3, botocore
-from botocore.exceptions import NoRegionError
+import argparse
+import datetime
+import errno
+import json
+import logging
+import os
+import platform
+import shutil
+import sys
+import traceback
+import warnings
 from io import open
+from textwrap import fill
+from typing import Any, Dict
+
+import boto3
+import botocore
+import tweak
+from botocore.exceptions import NoRegionError
 
 try:
     from .version import version as __version__
@@ -48,7 +60,7 @@ class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
 
 def initialize():
     global config, parser
-    from .util.printing import BOLD, RED, ENDC
+    from .util.printing import BOLD, ENDC, RED
     config = AegeaConfig(__name__, use_yaml=True, save_on_exit=False)
     if not os.path.exists(config.user_config_file):
         config_dir = os.path.dirname(os.path.abspath(config.user_config_file))

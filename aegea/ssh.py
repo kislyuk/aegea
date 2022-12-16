@@ -21,18 +21,35 @@ Gateways, and internal firewalls for the instance must be configured to allow
 SSH connections.
 """
 
-import os, sys, argparse, string, datetime, json, base64, time, fnmatch, subprocess, hashlib
+import argparse
+import base64
+import datetime
+import fnmatch
+import hashlib
+import json
+import os
+import string
+import subprocess
+import sys
+import time
 from functools import lru_cache
 
-import boto3, yaml
+import boto3
+import yaml
 
-from . import register_parser, logger
-from .util.aws import resolve_instance_id, resources, clients, ARN
-from .util.crypto import (add_ssh_host_key_to_known_hosts, ensure_local_ssh_key, get_public_key_from_pair,
-                          add_ssh_key_to_agent, get_ssh_key_path, get_ssh_id)
-from .util.printing import BOLD
-from .util.exceptions import AegeaException
+from . import logger, register_parser
+from .util.aws import ARN, clients, resolve_instance_id, resources
 from .util.aws.ssm import ensure_session_manager_plugin, run_command
+from .util.crypto import (
+    add_ssh_host_key_to_known_hosts,
+    add_ssh_key_to_agent,
+    ensure_local_ssh_key,
+    get_public_key_from_pair,
+    get_ssh_id,
+    get_ssh_key_path,
+)
+from .util.exceptions import AegeaException
+from .util.printing import BOLD
 
 opts_by_nargs = {
     "ssh": {0: "46AaCfGgKkMNnqsTtVvXxYy", 1: "BbcDEeFIiJLlmOopQRSW"},

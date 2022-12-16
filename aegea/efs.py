@@ -4,13 +4,25 @@ Utilities to manage AWS Elastic Filesystem resources.
 To delete EFS filesystems, use ``aegea rm``.
 """
 
-import os, sys, argparse, base64, socket
+import argparse
+import base64
+import os
+import socket
+import sys
 
-from . import register_parser, logger
+from . import logger, register_parser
 from .ls import register_listing_parser
+from .util.aws import (
+    clients,
+    encode_tags,
+    ensure_security_group,
+    ensure_vpc,
+    make_waiter,
+    resolve_security_group,
+    resources,
+)
 from .util.printing import page_output, tabulate
-from .util.aws import (clients, resources, ensure_vpc, encode_tags, make_waiter, ensure_security_group,
-                       resolve_security_group)
+
 
 def efs(args):
     efs_parser.print_help()

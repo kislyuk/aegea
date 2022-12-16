@@ -1,14 +1,22 @@
-import os, sys, json, time, base64, argparse, io, gzip, tempfile
+import argparse
+import base64
+import gzip
+import io
+import json
+import os
+import sys
+import tempfile
+import time
 from collections import OrderedDict
 
 from botocore.exceptions import ClientError
 
-from . import register_parser, logger, config, __version__
-from .util.aws import ARN, clients, resources, expect_error_codes
-from .util.aws.iam import ensure_iam_role, IAMPolicyBuilder
-from .util.aws.batch import bash_cmd_preamble
-from .util.cloudinit import get_bootstrap_files, get_rootfs_skel_dirs, encode_cloud_config_payload
+from . import __version__, config, logger, register_parser
 from .batch import submit, submit_parser
+from .util.aws import ARN, clients, expect_error_codes, resources
+from .util.aws.batch import bash_cmd_preamble
+from .util.aws.iam import IAMPolicyBuilder, ensure_iam_role
+from .util.cloudinit import encode_cloud_config_payload, get_bootstrap_files, get_rootfs_skel_dirs
 
 dockerfile = """
 FROM {base_image}

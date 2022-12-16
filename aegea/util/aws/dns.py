@@ -1,9 +1,11 @@
-import os, time
+import os
+import time
 
 from ... import config, logger
 from .. import VerboseRepr, paginate
 from ..exceptions import AegeaException
 from . import ARN, clients, ensure_vpc
+
 
 def get_client_token(iam_username, service):
     from getpass import getuser

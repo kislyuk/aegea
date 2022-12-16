@@ -1,14 +1,21 @@
-import os, sys, time, csv, json, unittest
-from botocore.exceptions import ClientError
+import csv
+import json
+import os
+import sys
+import time
+import unittest
 from datetime import datetime, timedelta
-import dateutil.parser
-from dateutil.tz import tzutc
-from typing import Dict, Any
+from typing import Any, Dict
 
-from . import register_parser, logger, config
+import dateutil.parser
+from botocore.exceptions import ClientError
+from dateutil.tz import tzutc
+
+from . import config, logger, register_parser
 from .util import natural_sort
-from .util.aws import expect_error_codes, ARN, clients, resources
-from .util.printing import RED, GREEN, WHITE, page_output, format_table
+from .util.aws import ARN, clients, expect_error_codes, resources
+from .util.printing import GREEN, RED, WHITE, format_table, page_output
+
 
 class Auditor(unittest.TestCase):
     cache = {}  # type: Dict[str, Any]

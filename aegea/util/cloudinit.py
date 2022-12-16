@@ -1,11 +1,20 @@
-import os, sys, base64, io, json, subprocess, random, string, tarfile
+import base64
+import io
+import json
+import os
+import random
+import string
+import subprocess
+import sys
+import tarfile
 from collections import OrderedDict
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .. import logger
 from . import gzip_compress_bytes
+from .aws import clients, ensure_s3_bucket
 from .crypto import get_public_key_from_pair
-from .aws import ensure_s3_bucket, clients
+
 
 def add_file_to_cloudinit_manifest(src_path, path, manifest):
     with open(src_path, "rb") as fh:

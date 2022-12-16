@@ -2,13 +2,17 @@
 Utilities to manage AWS Relational Database Service instances and snapshots.
 """
 
-import os, sys, argparse, getpass
+import argparse
+import getpass
+import os
+import sys
 from datetime import datetime
 
 from . import register_parser
 from .util import paginate
-from .util.printing import page_output, tabulate
 from .util.aws import ARN, clients, encode_tags
+from .util.printing import page_output, tabulate
+
 
 def rds(args):
     rds_parser.print_help()

@@ -1,12 +1,16 @@
-import os, sys, argparse
+import argparse
+import os
+import sys
+
 from botocore.exceptions import ClientError
 
-from .ls import register_parser, register_listing_parser
-from .logs import grep, add_time_bound_args
-from .util.printing import page_output, tabulate
-from .util.exceptions import AegeaException
-from .util.aws import ARN, resources, clients, ensure_vpc, expect_error_codes
+from .logs import add_time_bound_args, grep
+from .ls import register_listing_parser, register_parser
+from .util.aws import ARN, clients, ensure_vpc, expect_error_codes, resources
 from .util.aws.iam import ensure_iam_role
+from .util.exceptions import AegeaException
+from .util.printing import page_output, tabulate
+
 
 def flow_logs(args):
     flow_logs_parser.print_help()

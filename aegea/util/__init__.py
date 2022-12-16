@@ -1,8 +1,16 @@
-import os, sys, re, socket, time, io, gzip, logging, concurrent.futures
-from functools import partial
+import concurrent.futures
+import gzip
+import io
+import logging
+import os
+import re
+import socket
+import sys
+import time
 from datetime import datetime
+from functools import partial
 from reprlib import Repr
-from typing import Dict, Any
+from typing import Any, Dict
 
 from dateutil.parser import parse as dateutil_parse
 from dateutil.relativedelta import relativedelta
@@ -101,7 +109,10 @@ class hashabledict(dict):
         return hash(tuple(sorted(self.items())))
 
 def describe_cidr(cidr):
-    import ipwhois, ipaddress, socket
+    import ipaddress
+    import socket
+
+    import ipwhois
     address = ipaddress.ip_network(str(cidr)).network_address
     try:
         whois = ipwhois.IPWhois(address).lookup_rdap()
