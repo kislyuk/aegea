@@ -26,7 +26,7 @@ setuptools.setup(
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
         "tweak >= 1.0.4, < 2",
-        "pyyaml >= 3.12, < 6",
+        "pyyaml >= 3.12, < 7",
         "python-dateutil >= 2.6.1, < 3",
         "babel >= 2.4.0, < 3",
         "ipwhois >= 1.1.0, < 2",
