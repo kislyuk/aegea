@@ -11,7 +11,7 @@ import setuptools
 setuptools.setup(
     name="aegea",
     url="https://github.com/kislyuk/aegea",
-    license=open("LICENSE.md").readline().strip(),
+    license="Apache Software License",
     author="Andrey Kislyuk",
     author_email="kislyuk@gmail.com",
     description="Amazon Web Services Operator Interface",
