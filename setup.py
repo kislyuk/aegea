@@ -8,6 +8,8 @@ import textwrap
 
 import setuptools
 
+tests_require = ["coverage", "wheel", "ruff", "mypy", "types-python-dateutil", "types-requests", "types-PyYAML"]
+
 setuptools.setup(
     name="aegea",
     url="https://github.com/kislyuk/aegea",
@@ -22,7 +24,7 @@ setuptools.setup(
     setup_requires=["setuptools_scm >= 3.4.3"],
     install_requires=[
         "boto3 >= 1.20.35, < 2",
-        "argcomplete >= 1.9.5, < 3",
+        "argcomplete >= 1.9.5, < 4",
         "paramiko >= 2.4.2, < 3",
         "requests >= 2.18.4, < 3",
         "tweak >= 1.0.4, < 2",
@@ -33,7 +35,10 @@ setuptools.setup(
         "uritemplate >= 3.0.0, < 4",
         "chalice >= 1.21.7, < 2",
     ],
-    tests_require=["coverage", "flake8", "mypy"],
+    extras_require={
+        "test": tests_require,
+    },
+    tests_require=tests_require,
     packages=setuptools.find_packages(exclude=["test"]),
     scripts=glob.glob("scripts/*"),
     platforms=["MacOS X", "Posix"],

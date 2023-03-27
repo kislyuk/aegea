@@ -25,7 +25,6 @@ jobs:
         python-version: ${{matrix.python-version}}
     - name: Install
       run: |
-        pip install --quiet coverage flake8 wheel pandoc httpie mypy
         make install
         echo 'import coverage; coverage.process_startup()' > sitecustomize.py
     - name: Lint

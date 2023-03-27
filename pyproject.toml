@@ -5,3 +5,9 @@ profile = "black"
 line_length = 120
 skip = ["aegea/missions", "aegea/packages", "aegea/rootfs.skel.build_ami"]
 skip_gitignore = true
+[tool.ruff]
+line-length=120
+ignore=["E401", "F401"]
+exclude=["aegea/packages", "aegea/lambdas"]
+[tool.ruff.per-file-ignores]
+"test/test.py" = ["E402"]
