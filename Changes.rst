@@ -1,3 +1,10 @@
+Changes for v4.3.4 (2023-04-02)
+===============================
+
+-  Bump dependency versions
+
+-  Test and documentation infrastructure improvements
+
 Changes for v4.3.3 (2022-12-16)
 ===============================
 
