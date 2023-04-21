@@ -15,7 +15,6 @@ from aegea.util.aws.iam import IAMPolicyBuilder
 from aegea.util.aws.batch import ensure_job_definition
 from aegea.util.aws.spot import SpotFleetBuilder
 from aegea.util.exceptions import AegeaException
-from aegea.util.git import private_submodules
 
 for importer, modname, is_pkg in pkgutil.iter_modules(aegea.__path__):
     importlib.import_module((aegea.__package__ or "aegea") + "." + modname)
@@ -301,11 +300,6 @@ class TestAegea(unittest.TestCase):
         jd1 = ensure_job_definition(args)
         jd2 = ensure_job_definition(args)
         self.assertEqual(jd1["jobDefinitionArn"], jd2["jobDefinitionArn"])
-
-    @unittest.skipUnless("GH_AUTH" in os.environ, "requires GitHub credentials")
-    def test_git_utils(self):
-        for submodule in private_submodules("git@github.com:ansible/ansible.git"):
-            print(submodule)
 
     def test_ssh_utils(self):
         from aegea.util.aws.ssm import ensure_session_manager_plugin
