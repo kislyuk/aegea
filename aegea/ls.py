@@ -182,7 +182,9 @@ parser = register_listing_parser(subscriptions, help="List SNS subscriptions",
 
 def limits(args):
     """
-    Describe limits in effect on your AWS account. See also https://console.aws.amazon.com/ec2/v2/home#Limits:
+    Describe limits in effect on your AWS account.
+
+    See also https://console.aws.amazon.com/ec2/v2/home#Limits:
     """
     # https://aws.amazon.com/about-aws/whats-new/2014/06/19/amazon-ec2-service-limits-report-now-available/
     # Console-only APIs: getInstanceLimits, getAccountLimits, getAutoscalingLimits, getHostLimits
