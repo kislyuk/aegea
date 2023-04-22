@@ -32,16 +32,16 @@ def locate_ami(distribution, release, architecture):
     """
     Examples::
         locate_ami(distribution="Ubuntu", release="20.04", architecture="amd64")
-        locate_ami(distribution="Amazon Linux", release="2", architecture="arm64")
+        locate_ami(distribution="Amazon Linux", release="2023", architecture="arm64")
     """
-    if distribution == "Amazon Linux" and release in {"2", "2022"}:
+    if distribution == "Amazon Linux":
         if architecture == "amd64":
             architecture = "x86_64"
-        ssm_param_names = {
-            "2": f"/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{architecture}-gp2",
-            "2022": f"/aws/service/ami-amazon-linux-latest/al2022-ami-kernel-default-{architecture}"
-        }
-        ami_id = clients.ssm.get_parameters(Names=[ssm_param_names[release]])["Parameters"][0]["Value"]
+        if release == "2":
+            ssm_param_name = f"/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-{architecture}-gp2"
+        else:
+            ssm_param_name = f"/aws/service/ami-amazon-linux-latest/al{release}-ami-kernel-default-{architecture}"
+        ami_id = get_ssm_parameter(ssm_param_name)
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return resources.ec2.Image(ami_id)
     elif distribution == "Ubuntu":
@@ -49,7 +49,7 @@ def locate_ami(distribution, release, architecture):
             architecture = "amd64"
         ssm_param_name = "/aws/service/canonical/ubuntu/{product}/{release}/stable/current/{arch}/hvm/ebs-gp2/ami-id"
         ssm_param_name = ssm_param_name.format(product="server", release=release, arch=architecture)
-        ami_id = clients.ssm.get_parameters(Names=[ssm_param_name])["Parameters"][0]["Value"]
+        ami_id = get_ssm_parameter(ssm_param_name)
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return resources.ec2.Image(ami_id)
     raise AegeaException(f"No AMI found for {distribution} {release} {architecture}")

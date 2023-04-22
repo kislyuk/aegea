@@ -251,6 +251,14 @@ class TestAegea(unittest.TestCase):
         self.assertTrue(locate_ami("Ubuntu", "20.04", "arm64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Amazon Linux", "2", "x86_64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "22.04", "amd64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "22.04", "arm64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2", "amd64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2023", "amd64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Amazon Linux", "2023", "arm64").id.startswith("ami-"))
+        with self.assertRaises(Exception):
+            locate_ami("Amazon Linux", "9000", "arm64")
 
     def test_ip_ranges(self):
         get_public_ip_ranges()
