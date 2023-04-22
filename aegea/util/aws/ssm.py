@@ -19,11 +19,15 @@ from .logs import CloudwatchLogReader
 
 sm_plugin_bucket = "session-manager-downloads"
 
+
 def download_session_manager_plugin_macos(target_path):
     sm_archive = io.BytesIO()
-    clients.s3.download_fileobj(sm_plugin_bucket, "plugin/latest/mac/sessionmanager-bundle.zip", sm_archive)
+    build = "mac_arm64" if platform.machine() == "arm64" else "mac"
+    path = f"plugin/latest/{build}/sessionmanager-bundle.zip"
+    clients.s3.download_fileobj(sm_plugin_bucket, path, sm_archive)
     with zipfile.ZipFile(sm_archive) as zf, open(target_path, "wb") as fh:
         fh.write(zf.read("sessionmanager-bundle/bin/session-manager-plugin"))
+
 
 def download_session_manager_plugin_linux(target_path, pkg_format="deb"):
     assert pkg_format in {"deb", "rpm"}
@@ -40,6 +44,7 @@ def download_session_manager_plugin_linux(target_path, pkg_format="deb"):
             command = "rpm2cpio '{}' | cpio --extract --make-directories --directory '{}'"
             subprocess.check_call(command.format(sm_archive_path, td), shell=True)
         shutil.move(os.path.join(td, "usr/local/sessionmanagerplugin/bin/session-manager-plugin"), target_path)
+
 
 def ensure_session_manager_plugin():
     session_manager_dir = os.path.join(config.user_config_dir, "bin")
@@ -59,6 +64,7 @@ def ensure_session_manager_plugin():
         subprocess.check_call(["session-manager-plugin"], env=dict(os.environ, PATH=PATH))
     return shutil.which("session-manager-plugin", path=PATH)
 
+
 def run_command(command, instance_ids=None, targets=None, timeout=900):
     """
     Sends a command to specified instances using AWS Systems Manager. Waits for the command to complete.
@@ -67,11 +73,13 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
 
     See https://docs.aws.amazon.com/systems-manager/latest/userguide/execute-remote-commands.html for details.
     """
-    send_command_args = dict(DocumentName="AWS-RunShellScript",
-                             CloudWatchOutputConfig=dict(CloudWatchOutputEnabled=True, CloudWatchLogGroupName=__name__),
-                             Parameters=dict(commands=[command]),
-                             TimeoutSeconds=timeout,
-                             Comment="Started by {}".format(__name__))
+    send_command_args = dict(
+        DocumentName="AWS-RunShellScript",
+        CloudWatchOutputConfig=dict(CloudWatchOutputEnabled=True, CloudWatchLogGroupName=__name__),
+        Parameters=dict(commands=[command]),
+        TimeoutSeconds=timeout,
+        Comment=f"Started by {__name__}",
+    )
     if instance_ids:
         send_command_args.update(InstanceIds=instance_ids)
     if targets:
@@ -92,8 +100,9 @@ def run_command(command, instance_ids=None, targets=None, timeout=900):
                 for stream in "stdout", "stderr":
                     log_stream_name = "{}/{}/aws-runShellScript/{}".format(command_id, invocation["InstanceId"], stream)
                     if log_stream_name not in log_readers:
-                        log_readers[log_stream_name] = CloudwatchLogReader(log_group_name=__name__,
-                                                                           log_stream_name=log_stream_name)
+                        log_readers[log_stream_name] = CloudwatchLogReader(
+                            log_group_name=__name__, log_stream_name=log_stream_name
+                        )
                     try:
                         for event in log_readers[log_stream_name]:
                             print(event["message"], file=getattr(sys, stream))
