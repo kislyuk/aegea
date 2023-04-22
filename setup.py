@@ -25,7 +25,7 @@ setuptools.setup(
     install_requires=[
         "boto3 >= 1.20.35, < 2",
         "argcomplete >= 1.9.5, < 4",
-        "paramiko >= 2.4.2, < 3",
+        "paramiko >= 2.4.2, < 4",
         "requests >= 2.18.4, < 3",
         "tweak >= 1.0.4, < 2",
         "pyyaml >= 3.12, < 7",
