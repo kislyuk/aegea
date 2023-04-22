@@ -93,7 +93,8 @@ def get_ssh_ca_keys(bless_config):
     return "\n".join(ca_keys)
 
 def infer_architecture(instance_type):
-    if any((instance_type.startswith(f) for f in ("x2g", "m6g", "c6g", "r6g", "t4g", "a1"))):
+    instance_family = instance_type.split(".")[0]
+    if "g" in instance_family or instance_family == "a1":
         return "arm64"
     return "x86_64"
 
