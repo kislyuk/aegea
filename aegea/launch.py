@@ -318,8 +318,8 @@ parser.add_argument("--ami-tags", nargs="+", metavar="NAME=VALUE", help="Use the
 parser.add_argument("--ami-tag-keys", nargs="+", default=[], metavar="TAG_NAME",
                     help="Use the most recent AMI with these tag names")
 parser.add_argument("--ubuntu-linux-ami", action="store_true", help="Use the most recent Ubuntu Linux LTS AMI")
-parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux 2 AMI")
-parser.add_argument("--amazon-linux-release", help=argparse.SUPPRESS)
+parser.add_argument("--amazon-linux-ami", action="store_true", help="Use the most recent Amazon Linux AMI")
+parser.add_argument("--amazon-linux-release", help="Use a specific Amazon Linux release", choices={"2", "2022", "2023"})
 parser.add_argument("--spot", action="store_true",
                     help="Launch a preemptible spot instance, which is cheaper but could be forced to shut down")
 parser.add_argument("--duration-hours", type=float, help="Terminate the spot instance after this number of hours")
