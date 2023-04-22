@@ -714,7 +714,7 @@ cloudtrail_ls:
     - HasCustomEventSelectors
 
 launch:
-  instance_type: t3.micro
+  instance_type: t3a.micro
   tags: []
   storage: []
   commands: []
