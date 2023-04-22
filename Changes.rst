@@ -1,3 +1,16 @@
+Changes for v4.4.0 (2023-04-21)
+===============================
+
+-  aegea ssh: download correct SSM plugin
+
+-  aegea launch: use t3a.micro instance type by default
+
+-  Use Amazon Linux 2023 when specifying Amazon Linux
+
+-  Update paramiko dependency range
+
+-  Remove aegea deploy and git utils
+
 Changes for v4.3.4 (2023-04-02)
 ===============================
 
