@@ -20,7 +20,9 @@ from .util.printing import format_number, page_output, tabulate
 def s3(args):
     s3_parser.print_help()
 
+
 s3_parser = register_parser(s3, help="Manage S3 buckets and query s3 objects", description=__doc__)
+
 
 def describe_bucket_worker(bucket):
     bucket.LocationConstraint = clients.s3.get_bucket_location(Bucket=bucket.name)["LocationConstraint"]
@@ -28,16 +30,46 @@ def describe_bucket_worker(bucket):
     bucket_region = bucket.LocationConstraint or "us-east-1"
     if bucket_region != cloudwatch.meta.client.meta.region_name:
         cloudwatch = boto3.Session(region_name=bucket_region).resource("cloudwatch")
-    data = get_cloudwatch_metric_stats("AWS/S3", "NumberOfObjects",
-                                       start_time=datetime.utcnow() - timedelta(days=2),
-                                       end_time=datetime.utcnow(), period=3600, BucketName=bucket.name,
-                                       StorageType="AllStorageTypes", resource=cloudwatch)
+    data = get_cloudwatch_metric_stats(
+        "AWS/S3",
+        "NumberOfObjects",
+        start_time=datetime.utcnow() - timedelta(days=2),
+        end_time=datetime.utcnow(),
+        period=3600,
+        BucketName=bucket.name,
+        StorageType="AllStorageTypes",
+        resource=cloudwatch,
+    )
     bucket.NumberOfObjects = int(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None
-    data = get_cloudwatch_metric_stats("AWS/S3", "BucketSizeBytes",
-                                       start_time=datetime.utcnow() - timedelta(days=2),
-                                       end_time=datetime.utcnow(), period=3600, BucketName=bucket.name,
-                                       StorageType="StandardStorage", resource=cloudwatch)
-    bucket.BucketSizeBytes = format_number(data["Datapoints"][-1]["Average"]) if data["Datapoints"] else None
+    total_bytes = 0
+    cloudwatch_metric_stats_args = dict(
+        start_time=datetime.utcnow() - timedelta(days=2),
+        end_time=datetime.utcnow(),
+        period=3600,
+        resource=cloudwatch,
+        BucketName=bucket.name,
+    )
+    for storage_type in (
+        "Standard",
+        "StandardIA",
+        "OneZoneIA",
+        "ReducedRedundancy",
+        "GlacierInstantRetrieval",
+        "Glacier",
+        "DeepArchive",
+        "IntelligentTieringFA",
+        "IntelligentTieringIA",
+        "IntelligentTieringAA",
+        "IntelligentTieringAIA",
+        "IntelligentTieringDAA",
+    ):
+        data = get_cloudwatch_metric_stats(
+            "AWS/S3", "BucketSizeBytes", StorageType=f"{storage_type}Storage", **cloudwatch_metric_stats_args
+        )
+        size_bytes = data["Datapoints"][-1]["Average"] if data["Datapoints"] else 0
+        setattr(bucket, storage_type, format_number(size_bytes))
+        total_bytes += size_bytes
+    bucket.BucketSizeBytes = format_number(total_bytes)
     try:
         res = clients.s3.get_bucket_encryption(Bucket=bucket.name)
         enc = res["ServerSideEncryptionConfiguration"]["Rules"][0]["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"]
@@ -47,6 +79,7 @@ def describe_bucket_worker(bucket):
         bucket.Encryption = None
     return bucket
 
+
 def buckets(args):
     """
     List S3 buckets. See also "aws s3 ls". Use "aws s3 ls NAME" to list bucket contents.
@@ -55,7 +88,9 @@ def buckets(args):
         table = executor.map(describe_bucket_worker, filter_collection(resources.s3.buckets, args))
     page_output(tabulate(table, args))
 
+
 buckets_parser = register_filtering_parser(buckets, parent=s3_parser)
+
 
 def lifecycle(args):
     if args.delete:
@@ -70,14 +105,16 @@ def lifecycle(args):
     if args.abort_incomplete_multipart_upload is not None:
         rule["AbortIncompleteMultipartUpload"] = dict(DaysAfterInitiation=args.abort_incomplete_multipart_upload)
     if len(rule) > 2:
-        clients.s3.put_bucket_lifecycle_configuration(Bucket=args.bucket_name,
-                                                      LifecycleConfiguration=dict(Rules=[rule]))
+        clients.s3.put_bucket_lifecycle_configuration(
+            Bucket=args.bucket_name, LifecycleConfiguration=dict(Rules=[rule])
+        )
     try:
         for rule in resources.s3.BucketLifecycle(args.bucket_name).rules:
             print(json.dumps(rule))
     except ClientError as e:
         expect_error_codes(e, "NoSuchLifecycleConfiguration")
         logger.error("No lifecycle configuration for bucket %s", args.bucket_name)
+
 
 lifecycle_parser = register_parser(lifecycle, parent=s3_parser)
 lifecycle_parser.add_argument("bucket_name")
@@ -88,11 +125,14 @@ lifecycle_parser.add_argument("--transition-to-glacier", type=int, metavar="DAYS
 lifecycle_parser.add_argument("--expire", type=int, metavar="DAYS")
 lifecycle_parser.add_argument("--abort-incomplete-multipart-upload", type=int, metavar="DAYS")
 
+
 def cors(args):
     raise NotImplementedError()
 
+
 cors_parser = register_parser(cors, parent=s3_parser)
 cors_parser.add_argument("bucket_name")
+
 
 def select(args):
     """
@@ -109,23 +149,27 @@ def select(args):
     if args.compression_type:
         input_serialization.update(CompressionType=args.compression_type)
 
-    res = clients.s3.select_object_content(Bucket=bucket,
-                                           Key=key,
-                                           Expression=args.expression,
-                                           ExpressionType="SQL",
-                                           InputSerialization=input_serialization,
-                                           OutputSerialization={"JSON": {"RecordDelimiter": "\n"}})
+    res = clients.s3.select_object_content(
+        Bucket=bucket,
+        Key=key,
+        Expression=args.expression,
+        ExpressionType="SQL",
+        InputSerialization=input_serialization,
+        OutputSerialization={"JSON": {"RecordDelimiter": "\n"}},
+    )
     for event in res["Payload"]:
         if "Records" in event:
             sys.stdout.buffer.write(event["Records"]["Payload"])
         elif "Stats" in event or "Progress" in event:
             logger.info(event)
 
+
 select_parser = register_parser(select, parent=s3_parser)
 select_parser.add_argument("s3_url")
 select_parser.add_argument("expression")
 select_parser.add_argument("--json-type", choices={"document", "lines"}, default="document")
 select_parser.add_argument("--compression-type", choices={"gzip", "bzip2"})
+
 
 def versions(args):
     """
@@ -144,6 +188,7 @@ def versions(args):
 
 versions_parser = register_listing_parser(versions, parent=s3_parser)
 versions_parser.add_argument("s3_url")
+
 
 def restore(args):
     """
@@ -168,6 +213,7 @@ def restore(args):
             return
     else:
         raise AegeaException("No matching version found")
+
 
 restore_parser = register_parser(restore, parent=s3_parser)
 restore_parser.add_argument("s3_url")

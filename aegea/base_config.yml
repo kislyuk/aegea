@@ -276,8 +276,20 @@ s3_buckets:
     - creation_date
     - LocationConstraint
     - NumberOfObjects
-    - BucketSizeBytes
     - Encryption
+    - BucketSizeBytes
+    - Standard
+    - StandardIA
+    - OneZoneIA
+    - ReducedRedundancy
+    - GlacierInstantRetrieval
+    - Glacier
+    - DeepArchive
+    - IntelligentTieringFA
+    - IntelligentTieringIA
+    - IntelligentTieringAA
+    - IntelligentTieringAIA
+    - IntelligentTieringDAA
 
 s3_versions:
   columns:
