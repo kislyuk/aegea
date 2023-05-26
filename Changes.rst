@@ -1,3 +1,8 @@
+Changes for v4.4.1 (2023-05-25)
+===============================
+
+-  s3 buckets: Compute size metrics for all storage classes
+
 Changes for v4.4.0 (2023-04-21)
 ===============================
 
