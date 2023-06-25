@@ -1,8 +1,9 @@
 """
 Amazon Web Services Operator Interface
 
-For general help, run ``aegea help`` or visit https://github.com/kislyuk/aegea/wiki.
+For general help, run ``aegea help`` or visit https://github.com/kislyuk/aegea.
 For help with individual commands, run ``aegea <command> --help``.
+For help with configuration management, run ``aegea configure --help``.
 """
 
 import argparse
@@ -50,6 +51,14 @@ class AegeaConfig(tweak.Config):
     def user_config_file(self):
         return os.path.join(self.user_config_dir, "config.yml")
 
+    @property
+    def __doc__(self):
+        sources = {0: "defaults", 1: "site configuration", 2: "user configuration"}
+        doc = "Configuration sources:"
+        for i, config_file in enumerate(self.config_files):
+            doc += f"\n- {config_file} ({sources.get(i, 'set by AEGEA_CONFIG_FILE')})"
+        return doc
+
 class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
     def _get_help_string(self, action):
         default = _get_config_for_prog(self._prog).get(action.dest)
@@ -76,13 +85,14 @@ def initialize():
         description=f"{BOLD() + RED() + __name__.capitalize() + ENDC()}: {fill(__doc__.strip())}",
         formatter_class=AegeaHelpFormatter
     )
-    parser.add_argument("--version", action="version", version="%(prog)s {}\n{}\n{}\n{} {}\n{}".format(
+    parser.add_argument("--version", action="version", version="%(prog)s {}\n{}\n{}\n{} {}\n{}\n{}".format(
         __version__,
         "boto3 " + boto3.__version__,
         "botocore " + botocore.__version__,
         platform.python_implementation(),
         platform.python_version(),
         platform.platform(),
+        config.__doc__,
     ))
 
     def help(args):

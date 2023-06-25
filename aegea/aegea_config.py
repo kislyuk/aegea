@@ -1,5 +1,18 @@
 """
 List, read, and write Aegea configuration parameters.
+
+Aegea supports ingesting configuration from a configurable array of sources. Each source is a JSON or YAML file.
+Configuration sources that follow the first source update the configuration using recursive dictionary merging. Sources
+are enumerated in the following order of priority:
+
+- Command line options (values take priority over all other sources)
+- Any sources listed in the colon-delimited variable AEGEA_CONFIG_FILE
+- User configuration source, ~/.config/aegea/config.yml
+- Site-wide configuration source, /etc/aegea/config.yml
+- Configuration defaults from base_config.yml
+
+Run ``aegea --version`` to see the current configuration files in use.
+See https://github.com/kislyuk/aegea#configuration-management for more details.
 """
 
 import json
