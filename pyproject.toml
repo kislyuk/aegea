@@ -3,7 +3,7 @@ line-length = 120
 [tool.isort]
 profile = "black"
 line_length = 120
-skip = ["aegea/missions", "aegea/packages", "aegea/rootfs.skel.build_ami"]
+skip = ["scripts", "aegea/missions", "aegea/packages", "aegea/rootfs.skel.build_ami"]
 skip_gitignore = true
 [tool.ruff]
 line-length=120
