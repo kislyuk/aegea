@@ -16,9 +16,9 @@ jobs:
     strategy:
       max-parallel: 8
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{matrix.python-version}}
       uses: actions/setup-python@v4
       with:
@@ -28,7 +28,7 @@ jobs:
         make install
         echo 'import coverage; coverage.process_startup()' > sitecustomize.py
     - name: Lint
-      if: ${{matrix.python-version == '3.11'}}
+      if: ${{matrix.python-version == '3.12'}}
       run: make lint
     - name: Stagger tests to avoid throttling errors
       run: python3 -c 'import sys, time, hashlib; time.sleep(int.from_bytes(hashlib.md5(sys.version.encode()).digest(), sys.byteorder) % 16)'
@@ -40,4 +40,5 @@ jobs:
   isort:
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
       - uses: isort/isort-action@v1.1.0
