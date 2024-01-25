@@ -6,7 +6,8 @@ operators of Amazon Web Services (AWS) accounts. Aegea lets you build AMIs and D
 `cloud-init <http://cloudinit.readthedocs.io/>`_ config management package, manage config roles, launch and monitor
 instances and services, and manage AWS resources including ELB, RDS, and AWS Batch. Aegea is designed to be used in
 conjunction with the existing functionality of the `AWS CLI <https://aws.amazon.com/cli/>`_ and
-`boto3 <https://boto3.readthedocs.io/>`_.
+`boto3 <https://boto3.readthedocs.io/>`_. Aegea can be used in conjunction with tools like
+`MiniWDL <https://github.com/chanzuckerberg/miniwdl>`_ to orchestrate large-scale MLops and genomics workflows.
 
 Installation
 ~~~~~~~~~~~~
