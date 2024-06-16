@@ -50,6 +50,7 @@ def log_group_completer(prefix, **kwargs):
     for group in paginate(clients.logs.get_paginator("describe_log_groups"), **describe_log_groups_args):
         yield group["logGroupName"]
 
+
 def logs(args):
     if args.log_group and (args.log_stream or args.start_time or args.end_time):
         if args.export and args.print_s3_urls:
@@ -66,8 +67,12 @@ def logs(args):
         if args.log_group and group["logGroupName"] != args.log_group:
             continue
         n = 0
-        for stream in paginate(clients.logs.get_paginator("describe_log_streams"),
-                               logGroupName=group["logGroupName"], orderBy="LastEventTime", descending=True):
+        for stream in paginate(
+            clients.logs.get_paginator("describe_log_streams"),
+            logGroupName=group["logGroupName"],
+            orderBy="LastEventTime",
+            descending=True,
+        ):
             now = datetime.utcnow().replace(microsecond=0)
             stream["lastIngestionTime"] = now - datetime.utcfromtimestamp(stream.get("lastIngestionTime", 0) // 1000)
             table.append(dict(group, **stream))
@@ -75,6 +80,7 @@ def logs(args):
             if n >= args.max_streams_per_group:
                 break
     page_output(tabulate(table, args))
+
 
 logs_parser = register_parser(logs)
 logs_parser.add_argument("--max-streams-per-group", "-n", type=int, default=8)
@@ -84,6 +90,7 @@ logs_parser.add_argument("--print-s3-urls", action="store_true", help="With S3 l
 logs_parser.add_argument("log_group", nargs="?", help="CloudWatch log group").completer = log_group_completer
 logs_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
 add_time_bound_args(logs_parser, snap=2, start="-24h")
+
 
 def filter(args):
     filter_args = dict(logGroupName=args.log_group)
@@ -107,24 +114,32 @@ def filter(args):
         else:
             return SystemExit(os.EX_OK if num_results > 0 else os.EX_DATAERR)
 
+
 filter_parser = register_parser(filter, help="Filter and print events in a CloudWatch Logs stream or group of streams")
-filter_parser.add_argument("pattern", help="""CloudWatch filter pattern to use. Case-sensitive. See
-http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html""")
+filter_parser.add_argument(
+    "pattern",
+    help="""CloudWatch filter pattern to use. Case-sensitive. See
+http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/FilterAndPatternSyntax.html""",
+)
 filter_parser.add_argument("log_group", help="CloudWatch log group").completer = log_group_completer
 filter_parser.add_argument("log_stream", nargs="?", help="CloudWatch log stream")
-filter_parser.add_argument("--follow", "-f", help="Repeat search continuously instead of running once",
-                           action="store_true")
+filter_parser.add_argument(
+    "--follow", "-f", help="Repeat search continuously instead of running once", action="store_true"
+)
 add_time_bound_args(filter_parser)
+
 
 def grep(args):
     if args.context:
         args.before_context = args.after_context = args.context
     if not args.end_time:
         args.end_time = Timestamp("-0s")
-    query = clients.logs.start_query(logGroupName=args.log_group,
-                                     startTime=int(datetime.timestamp(args.start_time) * 1000),
-                                     endTime=int(datetime.timestamp(args.end_time) * 1000),
-                                     queryString=args.query)
+    query = clients.logs.start_query(
+        logGroupName=args.log_group,
+        startTime=int(datetime.timestamp(args.start_time) * 1000),
+        endTime=int(datetime.timestamp(args.end_time) * 1000),
+        queryString=args.query,
+    )
     seen_results = {}  # type: Dict[str, Dict]
     print_with_context = partial(print_log_event_with_context, before=args.before_context, after=args.after_context)
     try:
@@ -157,9 +172,13 @@ def grep(args):
     logger.debug("Query %s: %s", query["queryId"], res["statistics"])
     return SystemExit(os.EX_OK if seen_results else os.EX_DATAERR)
 
+
 grep_parser = register_parser(grep, help="Run a CloudWatch Logs Insights query (similar to filter, but faster)")
-grep_parser.add_argument("query", help="""CloudWatch Logs Insights query to use. See
-https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html""")
+grep_parser.add_argument(
+    "query",
+    help="""CloudWatch Logs Insights query to use. See
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html""",
+)
 grep_parser.add_argument("log_group", help="CloudWatch log group").completer = log_group_completer
 grep_parser.add_argument("--before-context", "-B", type=int, default=0)
 grep_parser.add_argument("--after-context", "-A", type=int, default=0)

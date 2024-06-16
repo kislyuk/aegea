@@ -18,21 +18,28 @@ from .util import ThreadPoolExecutor, Timestamp, get_mkfs_command, paginate
 from .util.aws import ARN, clients
 from .util.printing import BOLD, ENDC, GREEN, RED, YELLOW, page_output, tabulate
 
-sfn_status_colors = dict(RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(),
-                         FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED())
+sfn_status_colors = dict(
+    RUNNING=GREEN(), SUCCEEDED=BOLD() + GREEN(), FAILED=BOLD() + RED(), TIMED_OUT=BOLD() + RED(), ABORTED=BOLD() + RED()
+)
+
 
 def complete_state_machine_name(**kwargs):
     return [c["name"] for c in paginate(clients.stepfunctions.get_paginator("list_state_machines"))]
 
+
 def sfn(args):
     sfn_parser.print_help()
 
+
 sfn_parser = register_parser(sfn, help="Manage AWS Step Functions", description=__doc__)
+
 
 def state_machines(args):
     page_output(tabulate(paginate(clients.stepfunctions.get_paginator("list_state_machines")), args))
 
+
 state_machines_parser = register_listing_parser(state_machines, parent=sfn_parser, help="List state machines")
+
 
 def ls(args):
     if args.state_machine:
@@ -53,9 +60,11 @@ def ls(args):
 
     page_output(tabulate(executions, args))
 
+
 ls_parser = register_listing_parser(ls, parent=sfn_parser, help="List executions for state machines in this account")
 ls_parser.add_argument("--state-machine").completer = complete_state_machine_name
 ls_parser.add_argument("--status", choices=list(sfn_status_colors))
+
 
 def describe(args):
     if ARN(args.resource_arn).resource.startswith("execution"):
@@ -67,8 +76,10 @@ def describe(args):
         desc["definition"] = json.loads(desc.get("definition", "null"))
     return desc
 
+
 describe_parser = register_parser(describe, parent=sfn_parser, help="Describe a state machine or execution")
 describe_parser.add_argument("resource_arn")
+
 
 def watch(args, print_event_fn=batch.print_event):
     seen_events = set()  # type: Set[str]
@@ -79,8 +90,11 @@ def watch(args, print_event_fn=batch.print_event):
             sys.stderr.write(".")
             sys.stderr.flush()
         else:
-            logger.info("%s %s", exec_desc["executionArn"],
-                        sfn_status_colors[exec_desc["status"]] + exec_desc["status"] + ENDC())
+            logger.info(
+                "%s %s",
+                exec_desc["executionArn"],
+                sfn_status_colors[exec_desc["status"]] + exec_desc["status"] + ENDC(),
+            )
             previous_status = exec_desc["status"]
         history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
         for event in sorted(history["events"], key=lambda x: x["id"]):
@@ -89,9 +103,15 @@ def watch(args, print_event_fn=batch.print_event):
                 for key in event.keys():
                     if key.endswith("EventDetails") and event[key]:
                         details = event[key]
-                logger.info("%s %s %s %s %s %s", event["timestamp"], event["type"],
-                            details.get("resourceType", ""), details.get("resource", ""), details.get("name", ""),
-                            json.loads(details.get("parameters", "{}")).get("FunctionName", ""))
+                logger.info(
+                    "%s %s %s %s %s %s",
+                    event["timestamp"],
+                    event["type"],
+                    details.get("resourceType", ""),
+                    details.get("resource", ""),
+                    details.get("name", ""),
+                    json.loads(details.get("parameters", "{}")).get("FunctionName", ""),
+                )
                 if "taskSubmittedEventDetails" in event:
                     if event.get("taskSubmittedEventDetails", {}).get("resourceType") == "batch":
                         job_id = json.loads(event["taskSubmittedEventDetails"]["output"])["JobId"]
@@ -111,12 +131,20 @@ def watch(args, print_event_fn=batch.print_event):
         return SystemExit(json.dumps(last_event, indent=4, default=str))
 
 
-watch_parser = register_parser(watch, parent=sfn_parser,
-                               help="Monitor a state machine execution and stream its execution history")
+watch_parser = register_parser(
+    watch, parent=sfn_parser, help="Monitor a state machine execution and stream its execution history"
+)
 watch_parser.add_argument("execution_arn")
 
-event_colors = dict(ExecutionStarted=GREEN(), ExecutionSucceeded=BOLD() + GREEN(), ExecutionFailed=BOLD() + RED(),
-                    ExecutionAborted=BOLD() + RED(), TaskSucceeded=GREEN(), TaskFailed=RED())
+event_colors = dict(
+    ExecutionStarted=GREEN(),
+    ExecutionSucceeded=BOLD() + GREEN(),
+    ExecutionFailed=BOLD() + RED(),
+    ExecutionAborted=BOLD() + RED(),
+    TaskSucceeded=GREEN(),
+    TaskFailed=RED(),
+)
+
 
 def history(args):
     history = clients.stepfunctions.get_execution_history(executionArn=str(args.execution_arn))
@@ -134,8 +162,9 @@ def history(args):
         for key in list(event):
             if key.endswith("EventDetails") and event[key]:
                 event["details"] = event[key]
-        event["name"] = event["details"].get("name", ":".join([event["details"].get(k, "")
-                                                               for k in ["resourceType", "resource"]]))
+        event["name"] = event["details"].get(
+            "name", ":".join([event["details"].get(k, "") for k in ["resourceType", "resource"]])
+        )
         if event["name"] == ":":
             event["name"] = ARN(args.execution_arn).resource.split(":", 1)[-1]
         elif "FunctionName" in event["details"].get("parameters", ""):
@@ -145,11 +174,14 @@ def history(args):
         events.append(event)
     page_output(tabulate(events, args))
 
+
 history_parser = register_listing_parser(history, parent=sfn_parser, help="List event history for a given execution")
 history_parser.add_argument("execution_arn")
 
+
 def stop(args):
     return clients.stepfunctions.stop_execution(executionArn=args.execution_arn)
+
 
 stop_parser = register_listing_parser(stop, parent=sfn_parser, help="Stop an execution")
 stop_parser.add_argument("execution_arn")

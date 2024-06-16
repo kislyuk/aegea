@@ -25,8 +25,11 @@ class CloudwatchLogReader:
 
     def __iter__(self):
         page = None
-        get_args = dict(logGroupName=self.log_group_name, logStreamName=self.log_stream_name,
-                        limit=min(self.head or 10000, self.tail or 10000))
+        get_args = dict(
+            logGroupName=self.log_group_name,
+            logStreamName=self.log_stream_name,
+            limit=min(self.head or 10000, self.tail or 10000),
+        )
         get_args["startFromHead"] = True if self.tail is None else False
         if self.next_page_token:
             get_args["nextToken"] = self.next_page_token
@@ -41,6 +44,7 @@ class CloudwatchLogReader:
         if page:
             self.next_page_token = page[self.next_page_key]
 
+
 def export_log_files(args):
     bucket_name = "aegea-cloudwatch-log-export-{}-{}".format(ARN.get_account_id(), clients.logs.meta.region_name)
     bucket_arn = ARN(service="s3", region="", account_id="", resource=bucket_name)
@@ -52,10 +56,12 @@ def export_log_files(args):
     bucket = ensure_s3_bucket(bucket_name, policy=policy, lifecycle=lifecycle)
     if not args.end_time:
         args.end_time = Timestamp.match_precision(Timestamp("-0s"), args.start_time)
-    export_task_args = dict(logGroupName=args.log_group,
-                            fromTime=int(datetime.timestamp(args.start_time) * 1000),
-                            to=int(datetime.timestamp(args.end_time) * 1000),
-                            destination=bucket.name)
+    export_task_args = dict(
+        logGroupName=args.log_group,
+        fromTime=int(datetime.timestamp(args.start_time) * 1000),
+        to=int(datetime.timestamp(args.end_time) * 1000),
+        destination=bucket.name,
+    )
     if args.log_stream:
         export_task_args.update(logStreamNamePrefix=args.log_stream)
     cache_key = hashlib.sha256(json.dumps(export_task_args, sort_keys=True).encode()).hexdigest()[:32]
@@ -85,6 +91,7 @@ def export_log_files(args):
                 pass
     return bucket.objects.filter(Prefix=cache_key)
 
+
 def get_lines_for_log_file(log_file):
     if not log_file.key.endswith(".gz"):
         return []
@@ -95,11 +102,13 @@ def get_lines_for_log_file(log_file):
             log_lines.append(line)
     return log_lines
 
+
 def export_and_print_log_events(args):
     with ThreadPoolExecutor() as executor:
         for lines in executor.map(get_lines_for_log_file, export_log_files(args)):
             for line in lines:
                 sys.stdout.write(line)
+
 
 def print_log_event(event):
     if "@timestamp" in event:
@@ -108,6 +117,7 @@ def print_log_event(event):
         print(str(Timestamp(event["timestamp"])), event["message"])
     else:
         print(json.dumps(event, indent=4))
+
 
 def print_log_events(args):
     streams = []
@@ -140,22 +150,27 @@ def print_log_events(args):
                 break
             get_log_events_args.update(nextToken=page["nextForwardToken"], limit=10000)
 
+
 def print_log_event_with_context(log_record_pointer, before=10, after=10):
     res = clients.logs.get_log_record(logRecordPointer=log_record_pointer)
     log_record = res["logRecord"]
     account_id, log_group_name = log_record["@log"].split(":")
-    before_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
-                                             logStreamName=log_record["@logStream"],
-                                             endTime=int(log_record["@timestamp"]),
-                                             limit=before,
-                                             startFromHead=False)
+    before_ctx = clients.logs.get_log_events(
+        logGroupName=log_group_name,
+        logStreamName=log_record["@logStream"],
+        endTime=int(log_record["@timestamp"]),
+        limit=before,
+        startFromHead=False,
+    )
     for event in before_ctx["events"]:
         print_log_event(event)
-    after_ctx = clients.logs.get_log_events(logGroupName=log_group_name,
-                                            logStreamName=log_record["@logStream"],
-                                            startTime=int(log_record["@timestamp"]),
-                                            limit=after,
-                                            startFromHead=True)
+    after_ctx = clients.logs.get_log_events(
+        logGroupName=log_group_name,
+        logStreamName=log_record["@logStream"],
+        startTime=int(log_record["@timestamp"]),
+        limit=after,
+        startFromHead=True,
+    )
     for event in after_ctx["events"]:
         print_log_event(event)
     print("---")

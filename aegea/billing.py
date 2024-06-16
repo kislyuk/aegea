@@ -31,31 +31,45 @@ from .util.printing import format_table, get_cell, get_field, page_output, tabul
 def billing(args):
     billing_parser.print_help()
 
+
 billing_parser = register_parser(billing, help="Configure and view AWS cost and usage reports", description=__doc__)
+
 
 def configure(args):
     bucket_name = args.billing_reports_bucket.format(account_id=ARN.get_account_id())
-    bucket_policy = IAMPolicyBuilder(principal="arn:aws:iam::386209384616:root",
-                                     action=["s3:GetBucketAcl", "s3:GetBucketPolicy"],
-                                     resource="arn:aws:s3:::{}".format(bucket_name))
-    bucket_policy.add_statement(principal="arn:aws:iam::386209384616:root",
-                                action=["s3:PutObject"],
-                                resource="arn:aws:s3:::{}/*".format(bucket_name))
+    bucket_policy = IAMPolicyBuilder(
+        principal="arn:aws:iam::386209384616:root",
+        action=["s3:GetBucketAcl", "s3:GetBucketPolicy"],
+        resource="arn:aws:s3:::{}".format(bucket_name),
+    )
+    bucket_policy.add_statement(
+        principal="arn:aws:iam::386209384616:root",
+        action=["s3:PutObject"],
+        resource="arn:aws:s3:::{}/*".format(bucket_name),
+    )
     bucket = ensure_s3_bucket(bucket_name, policy=bucket_policy)
     try:
-        clients.cur.put_report_definition(ReportDefinition=dict(ReportName=__name__,
-                                                                TimeUnit="HOURLY",
-                                                                Format="textORcsv",
-                                                                Compression="GZIP",
-                                                                S3Bucket=bucket.name,
-                                                                S3Prefix="aegea",
-                                                                S3Region=clients.cur.meta.region_name,
-                                                                AdditionalSchemaElements=["RESOURCES"]))
+        clients.cur.put_report_definition(
+            ReportDefinition=dict(
+                ReportName=__name__,
+                TimeUnit="HOURLY",
+                Format="textORcsv",
+                Compression="GZIP",
+                S3Bucket=bucket.name,
+                S3Prefix="aegea",
+                S3Region=clients.cur.meta.region_name,
+                AdditionalSchemaElements=["RESOURCES"],
+            )
+        )
     except clients.cur.exceptions.DuplicateReportNameException:
         pass
-    print("Configured cost and usage reports. Enable cost allocation tags: http://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/activate-built-in-tags.html.") # noqa
+    print(
+        "Configured cost and usage reports. Enable cost allocation tags: http://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/activate-built-in-tags.html."
+    )  # noqa
+
 
 parser = register_parser(configure, parent=billing_parser)
+
 
 def filter_line_items(items, args):
     for item in items:
@@ -66,6 +80,7 @@ def filter_line_items(items, args):
             if dateutil.parser.parse(item["lineItem/UsageStartDate"]) < window_start:
                 continue
         yield item
+
 
 def ls(args):
     bucket = resources.s3.Bucket(args.billing_reports_bucket.format(account_id=ARN.get_account_id()))
@@ -88,12 +103,16 @@ def ls(args):
         msg = 'Unable to get report {} from {}: {}. Run "aegea billing configure" to enable reports.'
         raise AegeaException(msg.format(manifest_name, bucket, e))
 
+
 parser = register_parser(ls, parent=billing_parser, help="List contents of AWS cost and usage reports")
 parser.add_argument("--columns", nargs="+")
 parser.add_argument("--year", type=int, help="Year to get billing reports for. Defaults to current year")
 parser.add_argument("--month", type=int, help="Month (numeral) to get billing reports for. Defaults to current month")
-parser.add_argument("--billing-reports-bucket", help="Name of S3 bucket to retrieve billing reports from",
-                    default=config.billing_configure.billing_reports_bucket)  # type: ignore
+parser.add_argument(
+    "--billing-reports-bucket",
+    help="Name of S3 bucket to retrieve billing reports from",
+    default=config.billing_configure.billing_reports_bucket,
+)  # type: ignore
 parser.add_argument("--min-cost", type=float, help="Omit billing line items below this cost")
 parser.add_argument("--days", type=float, help="Only look at line items from this many past days")
 parser.add_argument("--by-user", action="store_true")

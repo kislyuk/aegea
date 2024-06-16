@@ -66,32 +66,43 @@ def parse_principal(args):
     elif args.iam_user:
         return resources.iam.User(args.iam_user)
     else:
-        logger.warn('You did not specify anyone to grant access to this secret. '
-                    'You can specify a principal with "--instance-profile" or "--iam-{role,user,group}".')
+        logger.warn(
+            "You did not specify anyone to grant access to this secret. "
+            'You can specify a principal with "--instance-profile" or "--iam-{role,user,group}".'
+        )
+
 
 def ensure_policy(principal, secret_arn):
-    policy_name = "{}.{}.{}".format(__name__,
-                                    ARN(principal.arn).resource.replace("/", "."),
-                                    ARN(secret_arn).resource.split(":")[1].replace("/", "."))
+    policy_name = "{}.{}.{}".format(
+        __name__,
+        ARN(principal.arn).resource.replace("/", "."),
+        ARN(secret_arn).resource.split(":")[1].replace("/", "."),
+    )
     policy_doc = IAMPolicyBuilder(action="secretsmanager:GetSecretValue", resource=secret_arn)
     policy = ensure_iam_policy(policy_name, policy_doc)
     principal.attach_policy(PolicyArn=policy.arn)
 
+
 def secrets(args):
     secrets_parser.print_help()
 
+
 secrets_parser = register_parser(secrets, help="Manage application credentials (secrets)", description=__doc__)
 
+
 def ls(args):
-    list_secrets_paginator = Paginator(method=clients.secretsmanager.list_secrets,
-                                       pagination_config=dict(result_key="SecretList",
-                                                              input_token="NextToken",
-                                                              output_token="NextToken",
-                                                              limit_key="MaxResults"),
-                                       model=None)
+    list_secrets_paginator = Paginator(
+        method=clients.secretsmanager.list_secrets,
+        pagination_config=dict(
+            result_key="SecretList", input_token="NextToken", output_token="NextToken", limit_key="MaxResults"
+        ),
+        model=None,
+    )
     page_output(tabulate(paginate(list_secrets_paginator), args))
 
+
 ls_parser = register_listing_parser(ls, parent=secrets_parser)
+
 
 def put(args):
     if args.generate_ssh_key:
@@ -110,28 +121,40 @@ def put(args):
     if parse_principal(args):
         ensure_policy(parse_principal(args), res["ARN"])
     if args.generate_ssh_key:
-        return dict(ssh_public_key=hostkey_line(hostnames=[], key=ssh_key).strip(),
-                    ssh_key_fingerprint=key_fingerprint(ssh_key))
+        return dict(
+            ssh_public_key=hostkey_line(hostnames=[], key=ssh_key).strip(), ssh_key_fingerprint=key_fingerprint(ssh_key)
+        )
+
 
 put_parser = register_parser(put, parent=secrets_parser)
-put_parser.add_argument("--generate-ssh-key", action="store_true",
-                        help="Generate a new SSH key pair and write the private key as the secret value; write the public key to stdout")  # noqa
+put_parser.add_argument(
+    "--generate-ssh-key",
+    action="store_true",
+    help="Generate a new SSH key pair and write the private key as the secret value; write the public key to stdout",
+)  # noqa
+
 
 def get(args):
     sys.stdout.write(clients.secretsmanager.get_secret_value(SecretId=args.secret_name)["SecretString"])
 
+
 get_parser = register_parser(get, parent=secrets_parser)
+
 
 def delete(args):
     return clients.secretsmanager.delete_secret(SecretId=args.secret_name)
 
+
 delete_parser = register_parser(delete, parent=secrets_parser)
 
 for parser in put_parser, get_parser, delete_parser:
-    parser.add_argument("secret_name",
-                        help="List the secret name. For put, pass the secret value on stdin, or via an environment variable with the same name as the secret.")  # noqa
+    parser.add_argument(
+        "secret_name",
+        help="List the secret name. For put, pass the secret value on stdin, or via an environment variable with the same name as the secret.",
+    )  # noqa
     parser.add_argument("--instance-profile")
     parser.add_argument("--iam-role")
     parser.add_argument("--iam-group")
-    parser.add_argument("--iam-user",
-                        help="Name of IAM instance profile, role, group, or user who will be granted access to secret")
+    parser.add_argument(
+        "--iam-user", help="Name of IAM instance profile, role, group, or user who will be granted access to secret"
+    )

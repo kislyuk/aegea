@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 
-import os, sys, subprocess, argparse, base64, logging
+import argparse
+import base64
+import logging
+import os
+import subprocess
+import sys
+
 from botocore.exceptions import ClientError
+
 from aegea import logger
-from aegea.util.aws import (ensure_vpc, ensure_security_group, ensure_ingress_rule, resources, clients,
-                            expect_error_codes)
+from aegea.util.aws import (
+    clients,
+    ensure_ingress_rule,
+    ensure_security_group,
+    ensure_vpc,
+    expect_error_codes,
+    resources,
+)
 
 logging.basicConfig(level=logging.INFO)
 

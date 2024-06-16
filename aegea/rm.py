@@ -22,13 +22,12 @@ from .util.aws import clients, expect_error_codes, paginate, resources
 
 def delete_vpc(name, args):
     vpc = resources.ec2.Vpc(name)
-    for eigw in paginate(clients.ec2.get_paginator('describe_egress_only_internet_gateways')):
+    for eigw in paginate(clients.ec2.get_paginator("describe_egress_only_internet_gateways")):
         for attachment in eigw["Attachments"]:
             if attachment.get("VpcId") == vpc.id:
                 logger.info("Will delete %s", eigw["EgressOnlyInternetGatewayId"])
                 clients.ec2.delete_egress_only_internet_gateway(
-                    EgressOnlyInternetGatewayId=eigw["EgressOnlyInternetGatewayId"],
-                    DryRun=not args.force
+                    EgressOnlyInternetGatewayId=eigw["EgressOnlyInternetGatewayId"], DryRun=not args.force
                 )
     for igw in vpc.internet_gateways.all():
         logger.info("Will delete %s", igw)
@@ -58,6 +57,7 @@ def delete_vpc(name, args):
         subnet.delete(DryRun=not args.force)
     logger.info("Will delete %s", vpc)
     vpc.delete(DryRun=not args.force)
+
 
 def rm(args):
     for name in args.names:
@@ -105,9 +105,9 @@ def rm(args):
             elif name.startswith("sir-"):
                 clients.ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[name], DryRun=not args.force)
             elif name.startswith("sfr-"):
-                clients.ec2.cancel_spot_fleet_requests(SpotFleetRequestIds=[name],
-                                                       TerminateInstances=False,
-                                                       DryRun=not args.force)
+                clients.ec2.cancel_spot_fleet_requests(
+                    SpotFleetRequestIds=[name], TerminateInstances=False, DryRun=not args.force
+                )
             elif name.startswith("fs-"):
                 efs = clients.efs
                 for mount_target in efs.describe_mount_targets(FileSystemId=name)["MountTargets"]:
@@ -143,12 +143,25 @@ def rm(args):
     if not args.force:
         logger.info("Dry run succeeded on %s. Run %s again with --force (-f) to actually remove.", args.names, __name__)
 
+
 parser = register_parser(rm, help="Remove or deprovision resources", description=__doc__)
 parser.add_argument("names", nargs="+")
 parser.add_argument("-f", "--force", action="store_true")
-parser.add_argument("--key-pair", action="store_true", help="""
-Assume input names are EC2 SSH key pair names (required when deleting key pairs, since they have no ID or ARN)""")
-parser.add_argument("--elb", action="store_true", help="""
-Assume input names are Elastic Load Balancer names (required when deleting ELBs, since they have no ID or ARN)""")
-parser.add_argument("--lambda", action="store_true", help="""
-Assume input names are Lambda function names (required when deleting Lambdas, since they have no ID or ARN)""")
+parser.add_argument(
+    "--key-pair",
+    action="store_true",
+    help="""
+Assume input names are EC2 SSH key pair names (required when deleting key pairs, since they have no ID or ARN)""",
+)
+parser.add_argument(
+    "--elb",
+    action="store_true",
+    help="""
+Assume input names are Elastic Load Balancer names (required when deleting ELBs, since they have no ID or ARN)""",
+)
+parser.add_argument(
+    "--lambda",
+    action="store_true",
+    help="""
+Assume input names are Lambda function names (required when deleting Lambdas, since they have no ID or ARN)""",
+)

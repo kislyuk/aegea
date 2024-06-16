@@ -1,6 +1,7 @@
 """
 List CloudTrail trails. Query, filter, and print trail events.
 """
+
 import json
 from datetime import datetime
 
@@ -13,13 +14,18 @@ from .util.printing import BLUE, GREEN, page_output, tabulate
 def cloudtrail(args):
     cloudtrail_parser.print_help()
 
-cloudtrail_parser = register_parser(cloudtrail, help="List CloudTrail trails and print trail events",
-                                    description=__doc__)
+
+cloudtrail_parser = register_parser(
+    cloudtrail, help="List CloudTrail trails and print trail events", description=__doc__
+)
+
 
 def ls(args):
     page_output(tabulate(clients.cloudtrail.describe_trails()["trailList"], args))
 
+
 parser = register_parser(ls, parent=cloudtrail_parser, help="List CloudTrail trails")
+
 
 def print_cloudtrail_event(event):
     log_record = json.loads(event["CloudTrailEvent"])
@@ -31,6 +37,7 @@ def print_cloudtrail_event(event):
     request_params = json.dumps(log_record.get("requestParameters"))
     print(event["EventTime"], user_identity, log_record["eventType"], log_record["eventName"], request_params)
 
+
 def lookup(args):
     lookup_args = dict(LookupAttributes=[{"AttributeKey": k, "AttributeValue": v} for k, v in args.attributes])
     if args.start_time:
@@ -39,8 +46,9 @@ def lookup(args):
         lookup_args.update(EndTime=args.end_time)
     if args.category:
         lookup_args.update(EventCategory=args.category)
-    for event in paginate(clients.cloudtrail.get_paginator('lookup_events'), **lookup_args):
+    for event in paginate(clients.cloudtrail.get_paginator("lookup_events"), **lookup_args):
         print_cloudtrail_event(event)
+
 
 parser = register_parser(lookup, parent=cloudtrail_parser, help="Query and print CloudTrail events")
 parser.add_argument("--attributes", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1), default=[])

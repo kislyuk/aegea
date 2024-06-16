@@ -53,17 +53,22 @@ from .util.printing import BOLD
 
 opts_by_nargs = {
     "ssh": {0: "46AaCfGgKkMNnqsTtVvXxYy", 1: "BbcDEeFIiJLlmOopQRSW"},
-    "scp": {0: "346BCpqrv", 1: "cFiloPS"}
+    "scp": {0: "346BCpqrv", 1: "cFiloPS"},
 }
 
+
 def add_bless_and_passthrough_opts(parser, program):
-    parser.add_argument("--bless-config", default=os.environ.get("BLESS_CONFIG"),
-                        help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)")
+    parser.add_argument(
+        "--bless-config",
+        default=os.environ.get("BLESS_CONFIG"),
+        help="Path to a Bless configuration file (or pass via the BLESS_CONFIG environment variable)",
+    )
     parser.add_argument("--use-kms-auth", help=argparse.SUPPRESS)
     for opt in opts_by_nargs[program][0]:
         parser.add_argument("-" + opt, action="store_true", help=argparse.SUPPRESS)
     for opt in opts_by_nargs[program][1]:
         parser.add_argument("-" + opt, action="append", help=argparse.SUPPRESS)
+
 
 def extract_passthrough_opts(args, program):
     opts = []
@@ -75,9 +80,11 @@ def extract_passthrough_opts(args, program):
             opts.extend(["-" + opt, value])
     return opts
 
+
 @lru_cache(8)
 def get_instance(name):
     return resources.ec2.Instance(resolve_instance_id(name))
+
 
 def save_instance_public_key(name, use_ssm=False):
     instance = get_instance(name)
@@ -89,12 +96,14 @@ def save_instance_public_key(name, use_ssm=False):
         hostname = instance.id if use_ssm else instance.public_dns_name
         add_ssh_host_key_to_known_hosts(hostname + " " + ssh_host_key + "\n")
 
+
 def resolve_instance_public_dns(name):
     instance = get_instance(name)
     if not getattr(instance, "public_dns_name", None):
         msg = "Unable to resolve public DNS name for {} (state: {})"
         raise AegeaException(msg.format(instance, getattr(instance, "state", {}).get("Name")))
     return instance.public_dns_name
+
 
 def get_user_info():
     iam_username = ARN.get_iam_username()
@@ -103,29 +112,37 @@ def get_user_info():
     linux_user_id = str(2000 + (int.from_bytes(user_id_bytes, byteorder=sys.byteorder) // 2))
     return dict(iam_username=iam_username, linux_username=linux_username, linux_user_id=linux_user_id)
 
+
 def get_kms_auth_token(session, bless_config, lambda_regional_config):
     logger.info("Requesting new KMS auth token in %s", lambda_regional_config["aws_region"])
     token_not_before = datetime.datetime.utcnow() - datetime.timedelta(minutes=1)
     token_not_after = token_not_before + datetime.timedelta(hours=1)
-    token = dict(not_before=token_not_before.strftime("%Y%m%dT%H%M%SZ"),
-                 not_after=token_not_after.strftime("%Y%m%dT%H%M%SZ"))
+    token = dict(
+        not_before=token_not_before.strftime("%Y%m%dT%H%M%SZ"), not_after=token_not_after.strftime("%Y%m%dT%H%M%SZ")
+    )
     encryption_context = {
         "from": session.resource("iam").CurrentUser().user_name,
         "to": bless_config["lambda_config"]["function_name"],
-        "user_type": "user"
+        "user_type": "user",
     }
-    kms = session.client('kms', region_name=lambda_regional_config["aws_region"])
-    res = kms.encrypt(KeyId=lambda_regional_config["kms_auth_key_id"],
-                      Plaintext=json.dumps(token),
-                      EncryptionContext=encryption_context)
+    kms = session.client("kms", region_name=lambda_regional_config["aws_region"])
+    res = kms.encrypt(
+        KeyId=lambda_regional_config["kms_auth_key_id"],
+        Plaintext=json.dumps(token),
+        EncryptionContext=encryption_context,
+    )
     return base64.b64encode(res["CiphertextBlob"]).decode()
 
+
 def get_awslambda_client(region_name, credentials):
-    return boto3.client("lambda",
-                        region_name=region_name,
-                        aws_access_key_id=credentials['AccessKeyId'],
-                        aws_secret_access_key=credentials['SecretAccessKey'],
-                        aws_session_token=credentials['SessionToken'])
+    return boto3.client(
+        "lambda",
+        region_name=region_name,
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretAccessKey"],
+        aws_session_token=credentials["SessionToken"],
+    )
+
 
 def ensure_bless_ssh_cert(ssh_key_name, bless_config, use_kms_auth, max_cert_age=1800):
     ssh_key = ensure_local_ssh_key(ssh_key_name)
@@ -142,33 +159,44 @@ def ensure_bless_ssh_cert(ssh_key_name, bless_config, use_kms_auth, max_cert_age
 
     if "oidc_client_id" in bless_config["client_config"]:
         from cryptography.hazmat.primitives import serialization
-        aws_oidc_args = ["--client-id", bless_config["client_config"]["oidc_client_id"],
-                         "--issuer-url", bless_config["client_config"]["oidc_issuer_url"]]
+
+        aws_oidc_args = [
+            "--client-id",
+            bless_config["client_config"]["oidc_client_id"],
+            "--issuer-url",
+            bless_config["client_config"]["oidc_issuer_url"],
+        ]
         aws_role_arn_arg = ["--aws-role-arn", bless_config["client_config"]["role_arn"]]
         token = json.loads(subprocess.check_output(["aws-oidc", "token"] + aws_oidc_args))["access_token"]
         creds = json.loads(subprocess.check_output(["aws-oidc", "creds-process"] + aws_oidc_args + aws_role_arn_arg))
         awslambda = get_awslambda_client(region_name=lambda_regional_config["aws_region"], credentials=creds)
-        public_key = ssh_key.key.public_key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                           format=serialization.PublicFormat.SubjectPublicKeyInfo)
-        bless_input = dict(public_key_to_sign=dict(publicKey="".join(public_key.decode().splitlines()[1:-1])),
-                           identity=dict(okta_identity=dict(AccessToken=token)))
+        public_key = ssh_key.key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        bless_input = dict(
+            public_key_to_sign=dict(publicKey="".join(public_key.decode().splitlines()[1:-1])),
+            identity=dict(okta_identity=dict(AccessToken=token)),
+        )
     else:
         session = boto3.Session(profile_name=bless_config["client_config"]["aws_user_profile"])
         iam = session.resource("iam")
         sts = session.client("sts")
         assume_role_res = sts.assume_role(RoleArn=bless_config["lambda_config"]["role_arn"], RoleSessionName=__name__)
-        awslambda = get_awslambda_client(region_name=lambda_regional_config["aws_region"],
-                                         credentials=assume_role_res["Credentials"])
-        bless_input = dict(bastion_user=iam.CurrentUser().user_name,
-                           bastion_user_ip="0.0.0.0/0",
-                           bastion_ips=",".join(bless_config["client_config"]["bastion_ips"]),
-                           remote_usernames=",".join(bless_config["client_config"]["remote_users"]),
-                           public_key_to_sign=get_public_key_from_pair(ssh_key),
-                           command="*")
+        awslambda = get_awslambda_client(
+            region_name=lambda_regional_config["aws_region"], credentials=assume_role_res["Credentials"]
+        )
+        bless_input = dict(
+            bastion_user=iam.CurrentUser().user_name,
+            bastion_user_ip="0.0.0.0/0",
+            bastion_ips=",".join(bless_config["client_config"]["bastion_ips"]),
+            remote_usernames=",".join(bless_config["client_config"]["remote_users"]),
+            public_key_to_sign=get_public_key_from_pair(ssh_key),
+            command="*",
+        )
         if use_kms_auth:
-            bless_input["kmsauth_token"] = get_kms_auth_token(session=session,
-                                                              bless_config=bless_config,
-                                                              lambda_regional_config=lambda_regional_config)
+            bless_input["kmsauth_token"] = get_kms_auth_token(
+                session=session, bless_config=bless_config, lambda_regional_config=lambda_regional_config
+            )
 
     res = awslambda.invoke(FunctionName=bless_config["lambda_config"]["function_name"], Payload=json.dumps(bless_input))
     bless_output = json.loads(res["Payload"].read().decode())
@@ -181,6 +209,7 @@ def ensure_bless_ssh_cert(ssh_key_name, bless_config, use_kms_auth, max_cert_age
             fh.write(bless_output["certificate"])
     return ssh_cert_filename
 
+
 def match_instance_to_bastion(instance, bastions):
     for bastion_config in bastions:
         for ipv4_pattern in bastion_config["hosts"]:
@@ -188,8 +217,16 @@ def match_instance_to_bastion(instance, bastions):
                 logger.info("Using %s to connect to %s", bastion_config["pattern"], instance)
                 return bastion_config
 
-def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_key_name=__name__, use_kms_auth=True,
-                          use_ssm=True, use_ec2_instance_connect=True):
+
+def prepare_ssh_host_opts(
+    username,
+    hostname,
+    bless_config_filename=None,
+    ssh_key_name=__name__,
+    use_kms_auth=True,
+    use_ssm=True,
+    use_ec2_instance_connect=True,
+):
     instance = get_instance(hostname)
     if not getattr(get_instance(hostname), "subnet", None):
         msg = "Unable to resolve subnet for {} (state: {})"
@@ -197,9 +234,7 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
     if bless_config_filename:
         with open(bless_config_filename) as fh:
             bless_config = yaml.safe_load(fh)
-        ensure_bless_ssh_cert(ssh_key_name=ssh_key_name,
-                              bless_config=bless_config,
-                              use_kms_auth=use_kms_auth)
+        ensure_bless_ssh_cert(ssh_key_name=ssh_key_name, bless_config=bless_config, use_kms_auth=use_kms_auth)
         add_ssh_key_to_agent(ssh_key_name)
         bastion_config = match_instance_to_bastion(instance=instance, bastions=bless_config["ssh_config"]["bastions"])
         if not username:
@@ -227,14 +262,16 @@ def prepare_ssh_host_opts(username, hostname, bless_config_filename=None, ssh_ke
                 InstanceId=instance.id,
                 InstanceOSUser=username,
                 SSHPublicKey=ssh_public_key,
-                AvailabilityZone=instance.placement["AvailabilityZone"]
+                AvailabilityZone=instance.placement["AvailabilityZone"],
             )
         return [], username + "@" + (instance.id if use_ssm else resolve_instance_public_dns(hostname))
+
 
 def init_ssm(instance_id):
     ssm_plugin_path = ensure_session_manager_plugin()
     os.environ["PATH"] = os.environ["PATH"] + ":" + os.path.dirname(ssm_plugin_path)
     return ["-o", "ProxyCommand=aws ssm start-session --document-name AWS-StartSSHSession --target " + instance_id]
+
 
 def ssh(args):
     ssh_opts = ["-o", f"ServerAliveInterval={args.server_alive_interval}"]
@@ -245,22 +282,30 @@ def ssh(args):
     if args.use_ssm:
         ssh_opts += init_ssm(get_instance(name).id)
 
-    host_opts, hostname = prepare_ssh_host_opts(username=prefix, hostname=name,
-                                                bless_config_filename=args.bless_config,
-                                                use_kms_auth=args.use_kms_auth,
-                                                use_ssm=args.use_ssm,
-                                                use_ec2_instance_connect=args.use_ec2_instance_connect)
+    host_opts, hostname = prepare_ssh_host_opts(
+        username=prefix,
+        hostname=name,
+        bless_config_filename=args.bless_config,
+        use_kms_auth=args.use_kms_auth,
+        use_ssm=args.use_ssm,
+        use_ec2_instance_connect=args.use_ec2_instance_connect,
+    )
     os.execvp("ssh", ["ssh"] + ssh_opts + host_opts + [hostname] + args.ssh_args)
+
 
 ssh_parser = register_parser(ssh, help="Connect to an EC2 instance", description=__doc__)
 ssh_parser.add_argument("name")
-ssh_parser.add_argument("ssh_args", nargs=argparse.REMAINDER,
-                        help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details")
+ssh_parser.add_argument(
+    "ssh_args",
+    nargs=argparse.REMAINDER,
+    help="Arguments to pass to ssh; please see " + BOLD("man ssh") + " for details",
+)
 ssh_parser.add_argument("--server-alive-interval", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--server-alive-count-max", help=argparse.SUPPRESS)
 ssh_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 ssh_parser.add_argument("--no-ec2-instance-connect", action="store_false", dest="use_ec2_instance_connect")
 add_bless_and_passthrough_opts(ssh_parser, "ssh")
+
 
 def scp(args):
     """
@@ -276,24 +321,35 @@ def scp(args):
             if args.use_ssm and not ssm_init_complete:
                 scp_opts += init_ssm(get_instance(hostname).id)
                 ssm_init_complete = True
-            host_opts, hostname = prepare_ssh_host_opts(username=username, hostname=hostname,
-                                                        bless_config_filename=args.bless_config,
-                                                        use_kms_auth=args.use_kms_auth, use_ssm=args.use_ssm)
+            host_opts, hostname = prepare_ssh_host_opts(
+                username=username,
+                hostname=hostname,
+                bless_config_filename=args.bless_config,
+                use_kms_auth=args.use_kms_auth,
+                use_ssm=args.use_ssm,
+            )
             args.scp_args[i] = hostname + colon + path
     os.execvp("scp", ["scp"] + scp_opts + host_opts + args.scp_args)
 
+
 scp_parser = register_parser(scp, help="Transfer files to or from EC2 instance", description=scp.__doc__)
-scp_parser.add_argument("scp_args", nargs=argparse.REMAINDER,
-                        help="Arguments to pass to scp; please see " + BOLD("man scp") + " for details")
+scp_parser.add_argument(
+    "scp_args",
+    nargs=argparse.REMAINDER,
+    help="Arguments to pass to scp; please see " + BOLD("man scp") + " for details",
+)
 scp_parser.add_argument("--no-ssm", action="store_false", dest="use_ssm")
 add_bless_and_passthrough_opts(scp_parser, "scp")
+
 
 def run(args):
     run_command(args.command, instance_ids=[get_instance(args.instance).id])
 
+
 run_parser = register_parser(run, help="Run a command on an EC2 instance", description=run_command.__doc__)
 run_parser.add_argument("instance")
 run_parser.add_argument("command")
+
 
 def ssh_to_ecs_container(instance_id, container_id, ssh_args, use_ssm):
     ssh_args = ["-t", instance_id, "sudo", "docker", "exec", "--interactive", "--tty", container_id] + ssh_args

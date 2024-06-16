@@ -11,8 +11,15 @@ Example:
 
 """
 
-import os, sys, logging, pkgutil, importlib, argparse
-import argcomplete, requests
+import argparse
+import importlib
+import logging
+import os
+import pkgutil
+import sys
+
+import argcomplete
+import requests
 
 logging.basicConfig(level=logging.WARNING)
 

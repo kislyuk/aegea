@@ -35,7 +35,9 @@ apt_mgr_shellcode = """
 sed -i -e "s|/archive.ubuntu.com|/{region}.ec2.archive.ubuntu.com|g" /etc/apt/sources.list
 apt-get update -qq"""
 
-ebs_vol_mgr_shellcode = apt_mgr_shellcode + """
+ebs_vol_mgr_shellcode = (
+    apt_mgr_shellcode
+    + """
 apt-get install -qqy --no-install-suggests --no-install-recommends httpie awscli jq lsof python3-virtualenv > /dev/null
 python3 -m virtualenv -q --python=python3 /opt/aegea-venv
 /opt/aegea-venv/bin/pip install -q argcomplete requests boto3 tweak pyyaml
@@ -43,7 +45,8 @@ python3 -m virtualenv -q --python=python3 /opt/aegea-venv
 aegea_ebs_cleanup() {{ echo Detaching EBS volume $aegea_ebs_vol_id; cd /; /opt/aegea-venv/bin/aegea ebs detach --unmount --force --delete $aegea_ebs_vol_id; }}
 trap aegea_ebs_cleanup EXIT
 aegea_ebs_vol_id=$(/opt/aegea-venv/bin/aegea ebs create --size-gb {size_gb} --volume-type {volume_type} --tags managedBy=aegea batchJobId=$AWS_BATCH_JOB_ID --attach --format ext4 --mount {mountpoint} | jq -r .VolumeId)
-"""  # noqa
+"""
+)  # noqa
 
 efs_vol_shellcode = """mkdir -p {efs_mountpoint}
 IMDS=http://169.254.169.254/latest
@@ -53,17 +56,22 @@ export SUBNET_ID=$(curl -sH X-aws-ec2-metadata-token:$TOKEN $IMDS/meta-data/netw
 NFS_ENDPOINT=$(echo "$AEGEA_EFS_DESC" | jq -r ".[] | select(.SubnetId == env.SUBNET_ID) | .IpAddress")
 mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $NFS_ENDPOINT:/ {efs_mountpoint}"""  # noqa
 
-instance_storage_mgr_shellcode = apt_mgr_shellcode + """
-apt-get install -qqy --no-install-suggests --no-install-recommends mdadm""" + instance_storage_shellcode
+instance_storage_mgr_shellcode = (
+    apt_mgr_shellcode
+    + """
+apt-get install -qqy --no-install-suggests --no-install-recommends mdadm"""
+    + instance_storage_shellcode
+)
+
 
 def ensure_dynamodb_table(name, hash_key_name, read_capacity_units=5, write_capacity_units=5):
     try:
-        table = resources.dynamodb.create_table(TableName=name,
-                                                KeySchema=[dict(AttributeName=hash_key_name, KeyType="HASH")],
-                                                AttributeDefinitions=[dict(AttributeName=hash_key_name,
-                                                                           AttributeType="S")],
-                                                ProvisionedThroughput=dict(ReadCapacityUnits=read_capacity_units,
-                                                                           WriteCapacityUnits=write_capacity_units))
+        table = resources.dynamodb.create_table(
+            TableName=name,
+            KeySchema=[dict(AttributeName=hash_key_name, KeyType="HASH")],
+            AttributeDefinitions=[dict(AttributeName=hash_key_name, AttributeType="S")],
+            ProvisionedThroughput=dict(ReadCapacityUnits=read_capacity_units, WriteCapacityUnits=write_capacity_units),
+        )
     except ClientError as e:
         expect_error_codes(e, "ResourceInUseException")
         table = resources.dynamodb.Table(name)
@@ -78,19 +86,29 @@ def get_command_and_env(args):
         args.privileged = True
         args.volumes.append(["/dev", "/dev"])
     if args.mount_instance_storage:
-        shellcode += instance_storage_mgr_shellcode.strip().format(region=ARN.get_region(),
-                                                                   mountpoint=args.mount_instance_storage,
-                                                                   mkfs=get_mkfs_command(fs_type="ext4")).splitlines()
+        shellcode += (
+            instance_storage_mgr_shellcode.strip()
+            .format(
+                region=ARN.get_region(), mountpoint=args.mount_instance_storage, mkfs=get_mkfs_command(fs_type="ext4")
+            )
+            .splitlines()
+        )
     if args.storage:
         for mountpoint, size_gb in args.storage:
             volume_type = "st1"
             if args.volume_type:
                 volume_type = args.volume_type
-            shellcode += ebs_vol_mgr_shellcode.strip().format(region=ARN.get_region(),
-                                                              aegea_version=__version__,
-                                                              size_gb=size_gb,
-                                                              volume_type=volume_type,
-                                                              mountpoint=mountpoint).splitlines()
+            shellcode += (
+                ebs_vol_mgr_shellcode.strip()
+                .format(
+                    region=ARN.get_region(),
+                    aegea_version=__version__,
+                    size_gb=size_gb,
+                    volume_type=volume_type,
+                    mountpoint=mountpoint,
+                )
+                .splitlines()
+            )
     elif args.efs_storage:
         args.privileged = True
         if "=" in args.efs_storage:
@@ -116,17 +134,17 @@ def get_command_and_env(args):
         args.execute.seek(0)
         bucket.upload_fileobj(args.execute, key_name)
         payload_url = clients.s3.generate_presigned_url(
-            ClientMethod='get_object',
-            Params=dict(Bucket=bucket.name, Key=key_name),
-            ExpiresIn=3600 * 24 * 7
+            ClientMethod="get_object", Params=dict(Bucket=bucket.name, Key=key_name), ExpiresIn=3600 * 24 * 7
         )
         tmpdir_fmt = "${AWS_BATCH_CE_NAME:-$AWS_EXECUTION_ENV}.${AWS_BATCH_JQ_NAME:-}.${AWS_BATCH_JOB_ID:-}.XXXXX"
-        shellcode += ['BATCH_SCRIPT=$(mktemp --tmpdir "{tmpdir_fmt}")'.format(tmpdir_fmt=tmpdir_fmt),
-                      "apt-get update -qq",
-                      "apt-get install -qqy --no-install-suggests --no-install-recommends curl ca-certificates gnupg",
-                      "curl -L '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
-                      "chmod +x $BATCH_SCRIPT",
-                      "$BATCH_SCRIPT"]
+        shellcode += [
+            'BATCH_SCRIPT=$(mktemp --tmpdir "{tmpdir_fmt}")'.format(tmpdir_fmt=tmpdir_fmt),
+            "apt-get update -qq",
+            "apt-get install -qqy --no-install-suggests --no-install-recommends curl ca-certificates gnupg",
+            "curl -L '{payload_url}' > $BATCH_SCRIPT".format(payload_url=payload_url),
+            "chmod +x $BATCH_SCRIPT",
+            "$BATCH_SCRIPT",
+        ]
     elif args.wdl:
         bucket = ensure_s3_bucket(args.staging_s3_bucket)
         wdl_key_name = "{}.wdl".format(hashlib.sha256(args.wdl.read()).hexdigest())
@@ -143,17 +161,22 @@ def get_command_and_env(args):
             "cd /mnt",
             "aws s3 cp s3://{bucket}/{key} .".format(bucket=bucket.name, key=wdl_key_name),
             "aws s3 cp s3://{bucket}/{key} wdl_input.json".format(bucket=bucket.name, key=wdl_input_key_name),
-            "miniwdl run --dir /mnt --verbose --error-json {} --input wdl_input.json > wdl_output.json".format(wdl_key_name),  # noqa
-            "aws s3 cp wdl_output.json s3://{bucket}/wdl_output/${{AWS_BATCH_JOB_ID}}.json".format(bucket=bucket.name)
+            "miniwdl run --dir /mnt --verbose --error-json {} --input wdl_input.json > wdl_output.json".format(
+                wdl_key_name
+            ),  # noqa
+            "aws s3 cp wdl_output.json s3://{bucket}/wdl_output/${{AWS_BATCH_JOB_ID}}.json".format(bucket=bucket.name),
         ]
     args.command = bash_cmd_preamble + shellcode + (args.command or [])
     return args.command, args.environment
 
+
 def get_ecr_image_uri(tag):
     return f"{ARN.get_account_id()}.dkr.ecr.{ARN.get_region()}.amazonaws.com/{tag}"
 
+
 def ensure_ecr_image(tag):
     pass
+
 
 def set_ulimits(args, container_props):
     if args.ulimits:
@@ -161,6 +184,7 @@ def set_ulimits(args, container_props):
         for ulimit in args.ulimits:
             name, value = ulimit.split(":", 1)
             container_props["ulimits"].append(dict(name=name, hardLimit=int(value), softLimit=int(value)))
+
 
 def get_volumes_and_mountpoints(args):
     volumes, mount_points = [], []
@@ -181,6 +205,7 @@ def get_volumes_and_mountpoints(args):
             mount_points.append(mount_spec)
     return volumes, mount_points
 
+
 def ensure_job_definition(args):
     def get_jd_arn_and_job_name(jd_res):
         job_name = args.name or f"{jd_res['jobDefinitionName']}_{jd_res['revision']}"
@@ -189,8 +214,9 @@ def ensure_job_definition(args):
     if args.ecs_image:
         args.image = get_ecr_image_uri(args.ecs_image)
     container_props = dict(image=args.image, user=args.user, privileged=args.privileged)
-    container_props.update(volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[], ulimits=[],
-                           secrets=[])
+    container_props.update(
+        volumes=[], mountPoints=[], environment=[], command=[], resourceRequirements=[], ulimits=[], secrets=[]
+    )
     if args.platform_capabilities == ["FARGATE"]:
         container_props["resourceRequirements"].append(dict(type="VCPU", value="0.25"))
         container_props["resourceRequirements"].append(dict(type="MEMORY", value="512"))
@@ -210,33 +236,43 @@ def ensure_job_definition(args):
         container_props["logConfiguration"]["options"] = {k: v for k, v in args.log_options}
     iam_role = ensure_iam_role(args.job_role, trust=["ecs-tasks"], policies=args.default_job_role_iam_policies)
     container_props.update(jobRoleArn=iam_role.arn)
-    expect_job_defn = dict(status="ACTIVE", type="container", parameters={}, tags={},
-                           retryStrategy=dict(attempts=args.retry_attempts, evaluateOnExit=[]),
-                           containerProperties=container_props, platformCapabilities=args.platform_capabilities)
+    expect_job_defn = dict(
+        status="ACTIVE",
+        type="container",
+        parameters={},
+        tags={},
+        retryStrategy=dict(attempts=args.retry_attempts, evaluateOnExit=[]),
+        containerProperties=container_props,
+        platformCapabilities=args.platform_capabilities,
+    )
     job_hash = hashlib.sha256(json.dumps(container_props, sort_keys=True).encode()).hexdigest()[:8]
     job_defn_name = __name__.replace(".", "_") + "_jd_" + job_hash
     if args.platform_capabilities == ["FARGATE"]:
         job_defn_name += "_FARGATE"
         container_props["fargatePlatformConfiguration"] = dict(platformVersion="LATEST")
         container_props["networkConfiguration"] = dict(assignPublicIp="ENABLED")
-    describe_job_definitions_paginator = Paginator(method=clients.batch.describe_job_definitions,
-                                                   pagination_config=dict(result_key="jobDefinitions",
-                                                                          input_token="nextToken",
-                                                                          output_token="nextToken",
-                                                                          limit_key="maxResults"),
-                                                   model=None)
+    describe_job_definitions_paginator = Paginator(
+        method=clients.batch.describe_job_definitions,
+        pagination_config=dict(
+            result_key="jobDefinitions", input_token="nextToken", output_token="nextToken", limit_key="maxResults"
+        ),
+        model=None,
+    )
     for job_defn in paginate(describe_job_definitions_paginator, jobDefinitionName=job_defn_name):
         job_defn_desc = {k: job_defn.pop(k) for k in ("jobDefinitionName", "jobDefinitionArn", "revision")}
         if job_defn == expect_job_defn:
             logger.info("Found existing Batch job definition %s", job_defn_desc["jobDefinitionArn"])
             return get_jd_arn_and_job_name(job_defn_desc)
     logger.info("Creating new Batch job definition %s", job_defn_name)
-    jd_res = clients.batch.register_job_definition(jobDefinitionName=job_defn_name,
-                                                   type="container",
-                                                   containerProperties=container_props,
-                                                   retryStrategy=dict(attempts=args.retry_attempts),
-                                                   platformCapabilities=args.platform_capabilities)
+    jd_res = clients.batch.register_job_definition(
+        jobDefinitionName=job_defn_name,
+        type="container",
+        containerProperties=container_props,
+        retryStrategy=dict(attempts=args.retry_attempts),
+        platformCapabilities=args.platform_capabilities,
+    )
     return get_jd_arn_and_job_name(jd_res)
+
 
 def ensure_lambda_helper():
     awslambda = getattr(clients, "lambda")
@@ -246,6 +282,7 @@ def ensure_lambda_helper():
     except awslambda.exceptions.ResourceNotFoundException:
         logger.info("Batch helper Lambda not found, installing")
         import chalice.cli  # type: ignore
+
         orig_argv = sys.argv
         orig_wd = os.getcwd()
         try:

@@ -19,7 +19,7 @@ import traceback
 import warnings
 from io import open
 from textwrap import fill
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import boto3
 import botocore
@@ -33,8 +33,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-config, parser = None, None  # type: AegeaConfig, argparse.ArgumentParser
-_subparsers = {}  # type: Dict[Any, Any]
 
 class AegeaConfig(tweak.Config):
     base_config_file = os.path.join(os.path.dirname(__file__), "base_config.yml")
@@ -59,6 +57,17 @@ class AegeaConfig(tweak.Config):
             doc += f"\n- {config_file} ({sources.get(i, 'set by AEGEA_CONFIG_FILE')})"
         return doc
 
+
+class _PlaceholderAegeaConfig(AegeaConfig):
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+config: AegeaConfig = _PlaceholderAegeaConfig()
+parser: argparse.ArgumentParser = argparse.ArgumentParser()
+_subparsers: Dict[Any, Any] = {}
+
+
 class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
     def _get_help_string(self, action):
         default = _get_config_for_prog(self._prog).get(action.dest)
@@ -67,9 +76,11 @@ class AegeaHelpFormatter(argparse.RawTextHelpFormatter):
             return action.help + f" (default: {default})"
         return action.help
 
+
 def initialize():
     global config, parser
     from .util.printing import BOLD, ENDC, RED
+
     config = AegeaConfig(__name__, use_yaml=True, save_on_exit=False)
     if not os.path.exists(config.user_config_file):
         config_dir = os.path.dirname(os.path.abspath(config.user_config_file))
@@ -83,26 +94,32 @@ def initialize():
 
     parser = argparse.ArgumentParser(
         description=f"{BOLD() + RED() + __name__.capitalize() + ENDC()}: {fill(__doc__.strip())}",
-        formatter_class=AegeaHelpFormatter
+        formatter_class=AegeaHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version="%(prog)s {}\n{}\n{}\n{} {}\n{}\n{}".format(
-        __version__,
-        "boto3 " + boto3.__version__,
-        "botocore " + botocore.__version__,
-        platform.python_implementation(),
-        platform.python_version(),
-        platform.platform(),
-        config.__doc__,
-    ))
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s {}\n{}\n{}\n{} {}\n{}\n{}".format(
+            __version__,
+            "boto3 " + boto3.__version__,
+            "botocore " + botocore.__version__,
+            platform.python_implementation(),
+            platform.python_version(),
+            platform.platform(),
+            config.__doc__,
+        ),
+    )
 
     def help(args):
         parser.print_help()
+
     register_parser(help)
+
 
 def main(args=None):
     parsed_args = parser.parse_args(args=args)
     logger.setLevel(parsed_args.log_level)
-    has_attrs = (getattr(parsed_args, "sort_by", None) and getattr(parsed_args, "columns", None))
+    has_attrs = getattr(parsed_args, "sort_by", None) and getattr(parsed_args, "columns", None)
     if has_attrs and parsed_args.sort_by not in parsed_args.columns:
         parsed_args.columns.append(parsed_args.sort_by)
     try:
@@ -133,13 +150,16 @@ def main(args=None):
             del result["ResponseMetadata"]
         print(json.dumps(result, indent=2, default=str))
 
+
 def _get_config_for_prog(prog):
     command = prog.split(" ", 1)[-1].replace("-", "_").replace(" ", "_")
     return config.get(command, {})
 
+
 def register_parser(function, parent=None, name=None, **add_parser_args):
     def get_aws_profiles(**kwargs):
         from botocore.session import Session
+
         return list(Session().full_config["profiles"])
 
     def set_aws_profile(profile_name):
@@ -148,6 +168,7 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
 
     def get_region_names(**kwargs):
         from botocore.loaders import create_loader
+
         for partition_data in create_loader().load_data("endpoints")["partitions"]:
             if partition_data["partition"] == config.partition:
                 return partition_data["regions"].keys()
@@ -157,13 +178,15 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
 
     def set_endpoint_url(endpoint_url):
         from .util.aws._boto3_loader import Loader
+
         Loader.client_kwargs["default"].update(endpoint_url=endpoint_url)
 
     def set_client_kwargs(client_kwargs):
         from .util.aws._boto3_loader import Loader
+
         Loader.client_kwargs.update(json.loads(client_kwargs))
 
-    if config is None:
+    if isinstance(config, _PlaceholderAegeaConfig):
         initialize()
     if parent is None:
         parent = parser
@@ -177,17 +200,29 @@ def register_parser(function, parent=None, name=None, **add_parser_args):
         add_parser_args["help"] = add_parser_args["description"].strip().splitlines()[0].rstrip(".")
     add_parser_args.setdefault("formatter_class", AegeaHelpFormatter)
     subparser = _subparsers[parent.prog].add_parser(parser_name.replace("_", "-"), **add_parser_args)
-    subparser.add_argument("--max-col-width", "-w", type=int, default=32,
-                           help="When printing tables, truncate column contents to this width. Set to 0 for auto fit.")
-    subparser.add_argument("--json", action="store_true",
-                           help="Output tabular data as a JSON-formatted list of objects")
-    subparser.add_argument("--log-level", default=config.get("log_level"), type=str.upper,
-                           help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
-                           choices={logging.getLevelName(i) for i in range(10, 60, 10)})
-    subparser.add_argument("--profile", help="Profile to use from the AWS CLI configuration file",
-                           type=set_aws_profile).completer = get_aws_profiles
-    subparser.add_argument("--region", help="Region to use (overrides environment variable)",
-                           type=set_aws_region).completer = get_region_names
+    subparser.add_argument(
+        "--max-col-width",
+        "-w",
+        type=int,
+        default=32,
+        help="When printing tables, truncate column contents to this width. Set to 0 for auto fit.",
+    )
+    subparser.add_argument(
+        "--json", action="store_true", help="Output tabular data as a JSON-formatted list of objects"
+    )
+    subparser.add_argument(
+        "--log-level",
+        default=config.get("log_level"),
+        type=str.upper,
+        help=str([logging.getLevelName(i) for i in range(10, 60, 10)]),
+        choices={logging.getLevelName(i) for i in range(10, 60, 10)},
+    )
+    subparser.add_argument(
+        "--profile", help="Profile to use from the AWS CLI configuration file", type=set_aws_profile
+    ).completer = get_aws_profiles
+    subparser.add_argument(
+        "--region", help="Region to use (overrides environment variable)", type=set_aws_region
+    ).completer = get_region_names
     subparser.add_argument("--endpoint-url", metavar="URL", help="Service endpoint URL to use", type=set_endpoint_url)
     subparser.add_argument("--client-kwargs", help=argparse.SUPPRESS, type=set_client_kwargs)
     subparser.set_defaults(entry_point=function)

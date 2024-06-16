@@ -53,10 +53,10 @@ class IAMPolicyBuilder:
             statement["Principal"] = principal
         self.policy["Statement"].append(statement)
         if action:
-            for action in (action if isinstance(action, list) else [action]):
+            for action in action if isinstance(action, list) else [action]:
                 self.add_action(action)
         if resource:
-            for resource in (resource if isinstance(resource, list) else [resource]):
+            for resource in resource if isinstance(resource, list) else [resource]:
                 self.add_resource(resource)
 
     def add_action(self, action):
@@ -79,12 +79,18 @@ class IAMPolicyBuilder:
     def __str__(self):
         return json.dumps(self.policy)
 
+
 def ensure_iam_role(name, policies=frozenset(), trust=frozenset()):
     assume_role_policy = IAMPolicyBuilder()
     assume_role_policy.add_assume_role_principals(trust)
-    role = ensure_iam_entity(name, policies=policies, collection=resources.iam.roles,
-                             constructor=resources.iam.create_role, RoleName=name,
-                             AssumeRolePolicyDocument=str(assume_role_policy))
+    role = ensure_iam_entity(
+        name,
+        policies=policies,
+        collection=resources.iam.roles,
+        constructor=resources.iam.create_role,
+        RoleName=name,
+        AssumeRolePolicyDocument=str(assume_role_policy),
+    )
     trust_policy = IAMPolicyBuilder(role.assume_role_policy_document)
     trust_policy.add_assume_role_principals(trust)
     if trust_policy.policy != role.assume_role_policy_document:
@@ -92,9 +98,12 @@ def ensure_iam_role(name, policies=frozenset(), trust=frozenset()):
         role.AssumeRolePolicy().update(PolicyDocument=str(trust_policy))
     return role
 
+
 def ensure_iam_group(name, policies=frozenset()):
-    return ensure_iam_entity(name, policies=policies, collection=resources.iam.groups,
-                             constructor=resources.iam.create_group, GroupName=name)
+    return ensure_iam_entity(
+        name, policies=policies, collection=resources.iam.groups, constructor=resources.iam.create_group, GroupName=name
+    )
+
 
 def ensure_iam_entity(iam_entity_name, policies, collection, constructor, **constructor_args):
     for entity in collection.all():
@@ -116,6 +125,7 @@ def ensure_iam_entity(iam_entity_name, policies, collection, constructor, **cons
     # TODO: accommodate IAM eventual consistency
     return entity
 
+
 def ensure_instance_profile(iam_role_name, policies=frozenset()):
     for instance_profile in resources.iam.instance_profiles.all():
         if instance_profile.name == iam_role_name:
@@ -131,6 +141,7 @@ def ensure_instance_profile(iam_role_name, policies=frozenset()):
         instance_profile.add_role(RoleName=role.name)
     return instance_profile
 
+
 def ensure_iam_policy(name, doc):
     try:
         return resources.iam.create_policy(PolicyName=name, PolicyDocument=str(doc))
@@ -143,6 +154,7 @@ def ensure_iam_policy(name, doc):
                 version.delete()
         return policy
 
+
 def compose_managed_policies(policy_names):
     policy = IAMPolicyBuilder()
     for policy_name in policy_names:
@@ -152,7 +164,10 @@ def compose_managed_policies(policy_names):
             policy.policy["Statement"][-1]["Sid"] = policy_name + str(i)
     return policy
 
+
 def ensure_fargate_execution_role(name):
-    return ensure_iam_role(name, trust=["ecs-tasks"],
-                           policies=["service-role/AmazonEC2ContainerServiceforEC2Role",
-                                     "service-role/AWSBatchServiceRole"])
+    return ensure_iam_role(
+        name,
+        trust=["ecs-tasks"],
+        policies=["service-role/AmazonEC2ContainerServiceforEC2Role", "service-role/AWSBatchServiceRole"],
+    )

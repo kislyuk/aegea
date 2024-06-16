@@ -16,7 +16,9 @@ from .util.printing import page_output, tabulate
 def ecr(args):
     ecr_parser.print_help()
 
+
 ecr_parser = register_parser(ecr, help="Manage Elastic Container Registry resources", description=__doc__)
+
 
 def ls(args):
     table = []  # type: List[Dict]
@@ -35,16 +37,20 @@ def ls(args):
     table = sorted(table, key=lambda r: r["repositoryName"] + str(r.get("imagePushedAt")))
     page_output(tabulate(table, args))
 
+
 ls_parser = register_listing_parser(ls, parent=ecr_parser, help="List ECR repos and images")
 ls_parser.add_argument("repositories", nargs="*")
+
 
 def ecr_image_name_completer(**kwargs):
     return (r["repositoryName"] for r in paginate(clients.ecr.get_paginator("describe_repositories")))
 
+
 def retag(args):
     if "dkr.ecr" in args.repository and "amazonaws.com" in args.repository:
-        if not args.repository.startswith("{}.dkr.ecr.{}.amazonaws.com/".format(ARN.get_account_id(),
-                                                                                clients.ecr.meta.region_name)):
+        if not args.repository.startswith(
+            "{}.dkr.ecr.{}.amazonaws.com/".format(ARN.get_account_id(), clients.ecr.meta.region_name)
+        ):
             raise AegeaException("Unexpected repository ID {}".format(args.repository))
         args.repository = args.repository.split("/", 1)[1]
     image_id_key = "imageDigest" if len(args.existing_tag_or_digest) == 64 else "imageTag"
@@ -54,9 +60,10 @@ def retag(args):
             break
     else:
         raise AegeaException("No image found for tag or digest {}".format(args.existing_tag_or_digest))
-    return clients.ecr.put_image(repositoryName=args.repository,
-                                 imageManifest=image["imageManifest"],
-                                 imageTag=args.new_tag)
+    return clients.ecr.put_image(
+        repositoryName=args.repository, imageManifest=image["imageManifest"], imageTag=args.new_tag
+    )
+
 
 retag_parser = register_parser(retag, parent=ecr_parser, help="Add a new tag to an existing image")
 retag_parser.add_argument("repository").completer = ecr_image_name_completer

@@ -23,6 +23,7 @@ def get_stats_for_region(region):
         num_instances, num_amis, num_vpcs, num_enis, num_volumes = ["Access denied"] * 5  # type: ignore
     return [region, num_instances, num_amis, num_vpcs, num_enis, num_volumes]
 
+
 def top(args):
     table = []  # type: List[List]
     columns = ["Region", "Instances", "AMIs", "VPCs", "Network interfaces", "EBS volumes"]
@@ -30,4 +31,5 @@ def top(args):
     table = list(executor.map(get_stats_for_region, boto3.Session().get_available_regions("ec2")))
     page_output(format_table(table, column_names=columns, max_col_width=args.max_col_width))
 
-parser = register_parser(top, help='Show an overview of AWS resources per region')
+
+parser = register_parser(top, help="Show an overview of AWS resources per region")

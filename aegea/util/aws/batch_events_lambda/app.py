@@ -4,6 +4,7 @@ records job descriptions, so they can be referenced later when they disappear fr
 
 Fields like "command" and "environment" are redacted to avoid storing potentially sensitive information.
 """
+
 import json
 import os
 
@@ -13,6 +14,7 @@ from chalice import Chalice
 s3 = boto3.resource("s3")
 
 app = Chalice(app_name="aegea-batch-events")
+
 
 @app.on_cw_event({"source": ["aws.batch"]})
 def process_batch_event(event):

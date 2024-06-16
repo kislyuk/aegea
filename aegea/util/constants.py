@@ -5,8 +5,10 @@ from typing import Any, Dict
 _constants_filename = os.path.join(os.path.dirname(__file__), "..", "constants.json")
 _constants = {}  # type: Dict[str, Any]
 
+
 def write():
     from . import aws
+
     raise NotImplementedError()
     """
     constants = {"instance_types": {}}
@@ -20,6 +22,7 @@ def write():
     with open(_constants_filename, "w") as fh:
         json.dump(constants, fh)
     """
+
 
 def get(field):
     if not _constants:

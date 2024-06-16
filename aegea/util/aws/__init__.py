@@ -28,6 +28,7 @@ from . import clients, resources
 def get_ssm_parameter(name):
     return clients.ssm.get_parameter(Name=name)["Parameter"]["Value"]
 
+
 def locate_ami(distribution, release, architecture):
     """
     Examples::
@@ -54,6 +55,7 @@ def locate_ami(distribution, release, architecture):
         return resources.ec2.Image(ami_id)
     raise AegeaException(f"No AMI found for {distribution} {release} {architecture}")
 
+
 def ensure_vpc():
     """
     If a default VPC exists in the current account/region, return it; otherwise, return the first VPC managed by aegea,
@@ -66,6 +68,7 @@ def ensure_vpc():
             break
         else:
             from ... import config
+
             logger.info("Creating VPC with CIDR %s", config.vpc.cidr[ARN.get_region()])
             tags = dict(Name="aegea-vpc", managedBy="aegea")
             tag_spec = dict(ResourceType="vpc", Tags=encode_tags(tags))
@@ -93,9 +96,11 @@ def ensure_vpc():
                 route_table.create_route(DestinationIpv6CidrBlock="::/0", EgressOnlyInternetGatewayId=eigw_id)
     return vpc
 
+
 def availability_zones():
     for az in clients.ec2.describe_availability_zones()["AvailabilityZones"]:
         yield az["ZoneName"]
+
 
 def ensure_subnet(vpc, availability_zone=None, assign_ipv6_cidr_blocks=False):
     """
@@ -112,18 +117,21 @@ def ensure_subnet(vpc, availability_zone=None, assign_ipv6_cidr_blocks=False):
         break
     else:
         from ... import config
+
         subnet_cidrs = ip_network(str(config.vpc.cidr[ARN.get_region()])).subnets(new_prefix=config.vpc.subnet_prefix)
         subnets = {}
         for az, subnet_cidr in zip(availability_zones(), subnet_cidrs):
             logger.info("Creating subnet with CIDR %s in %s, %s", subnet_cidr, vpc, az)
             tags = dict(Name="aegea-subnet", managedBy="aegea")
             tag_spec = dict(ResourceType="subnet", Tags=encode_tags(tags))
-            subnets[az] = resources.ec2.create_subnet(VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az,
-                                                      TagSpecifications=[tag_spec])
+            subnets[az] = resources.ec2.create_subnet(
+                VpcId=vpc.id, CidrBlock=str(subnet_cidr), AvailabilityZone=az, TagSpecifications=[tag_spec]
+            )
             time.sleep(1)
             clients.ec2.get_waiter("subnet_available").wait(SubnetIds=[subnets[az].id])
-            clients.ec2.modify_subnet_attribute(SubnetId=subnets[az].id,
-                                                MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch))
+            clients.ec2.modify_subnet_attribute(
+                SubnetId=subnets[az].id, MapPublicIpOnLaunch=dict(Value=config.vpc.map_public_ip_on_launch)
+            )
         if assign_ipv6_cidr_blocks:
             vpc_cidr_block = vpc.ipv6_cidr_block_association_set[0]["Ipv6CidrBlock"]
             subnet_cidr_blocks = list(ip_network(vpc_cidr_block).subnets(new_prefix=64))
@@ -132,10 +140,11 @@ def ensure_subnet(vpc, availability_zone=None, assign_ipv6_cidr_blocks=False):
                 clients.ec2.associate_subnet_cidr_block(SubnetId=subnet.id, Ipv6CidrBlock=str(subnet_cidr_blocks[i]))
                 clients.ec2.modify_subnet_attribute(
                     SubnetId=subnet.id,
-                    AssignIpv6AddressOnCreation=dict(Value=config.vpc.assign_ipv6_address_on_creation)
+                    AssignIpv6AddressOnCreation=dict(Value=config.vpc.assign_ipv6_address_on_creation),
                 )
         subnet = subnets[availability_zone] if availability_zone is not None else list(subnets.values())[0]
     return subnet
+
 
 def ensure_ingress_rule(security_group, **kwargs):
     cidr_ip, source_security_group_id = kwargs.pop("CidrIp"), kwargs.pop("SourceSecurityGroupId")
@@ -153,6 +162,7 @@ def ensure_ingress_rule(security_group, **kwargs):
             authorize_ingress_args["IpPermissions"][0]["UserIdGroupPairs"] = [dict(GroupId=source_security_group_id)]
         security_group.authorize_ingress(**authorize_ingress_args)
 
+
 def resolve_security_group(name, vpc=None):
     if vpc is None:
         vpc = ensure_vpc()
@@ -161,6 +171,7 @@ def resolve_security_group(name, vpc=None):
         if security_group.group_name == name:
             return security_group
     raise KeyError(name)
+
 
 def ensure_security_group(name, vpc, tcp_ingress=frozenset()):
     try:
@@ -177,9 +188,16 @@ def ensure_security_group(name, vpc, tcp_ingress=frozenset()):
         source_security_group_id = None
         if "source_security_group_name" in rule:
             source_security_group_id = resolve_security_group(rule["source_security_group_name"], vpc).id
-        ensure_ingress_rule(security_group, IpProtocol="tcp", FromPort=rule["port"], ToPort=rule["port"],
-                            CidrIp=rule.get("cidr"), SourceSecurityGroupId=source_security_group_id)
+        ensure_ingress_rule(
+            security_group,
+            IpProtocol="tcp",
+            FromPort=rule["port"],
+            ToPort=rule["port"],
+            CidrIp=rule.get("cidr"),
+            SourceSecurityGroupId=source_security_group_id,
+        )
     return security_group
+
 
 class S3BucketLifecycleBuilder:
     def __init__(self, **kwargs):
@@ -203,8 +221,10 @@ class S3BucketLifecycleBuilder:
     def __iter__(self):
         yield ("Rules", self.rules)
 
+
 def ensure_s3_bucket(name=None, policy=None, lifecycle=None, encryption=None):
     from ... import config
+
     if name is None:
         name = f"aegea-assets-{ARN.get_account_id()}"
     bucket = resources.s3.Bucket(name)
@@ -232,6 +252,7 @@ def ensure_s3_bucket(name=None, policy=None, lifecycle=None, encryption=None):
     if lifecycle:
         bucket.LifecycleConfiguration().put(LifecycleConfiguration=dict(lifecycle))
     return bucket
+
 
 class ARN:
     arn = partition = service = region = account_id = resource = ""
@@ -275,6 +296,7 @@ class ARN:
     def __str__(self):
         return ":".join(getattr(self, field) for field in self.fields)
 
+
 def encode_tags(tags, case="title"):
     if isinstance(tags, (list, tuple)):
         tags = dict(tag.split("=", 1) for tag in tags)
@@ -284,17 +306,22 @@ def encode_tags(tags, case="title"):
     elif case == "lower":
         return [dict(key=k, value=v) for k, v in tags.items()]
 
+
 def decode_tags(tags):
     return {tag["Key"]: tag["Value"] for tag in tags}
+
 
 def add_tags(resource, dry_run=False, **tags):
     return resource.create_tags(Tags=encode_tags(tags), DryRun=dry_run)
 
+
 def filter_by_tags(collection, **tags):
     return collection.filter(Filters=[dict(Name="tag:" + k, Values=[v]) for k, v in tags.items()])
 
+
 def filter_by_tag_keys(collection, *tag_keys):
     return collection.filter(Filters=[dict(Name="tag-key", Values=[k]) for k in tag_keys])
+
 
 def resolve_instance_id(name):
     filter_name = "dns-name" if name.startswith("ec2") and name.endswith("compute.amazonaws.com") else "tag:Name"
@@ -305,6 +332,7 @@ def resolve_instance_id(name):
         return desc["Reservations"][0]["Instances"][0]["InstanceId"]
     except IndexError:
         raise AegeaException(f'Could not resolve "{name}" to a known instance')
+
 
 def get_bdm(ami=None, max_devices=12, ebs_storage=None):
     # Note: d2.8xl and hs1.8xl have 24 devices
@@ -324,19 +352,23 @@ def get_bdm(ami=None, max_devices=12, ebs_storage=None):
     bdm.extend(ebs_bdm)
     return bdm
 
+
 def get_metadata(category):
     imds = IMDS()
     token = imds._fetch_metadata_token()
     return imds._get_request(url_path=f"latest/meta-data/{category}", retry_func=None, token=token).text
+
 
 def get_ecs_task_metadata(path="/task"):
     res = requests.get(os.environ["ECS_CONTAINER_METADATA_URI"] + path)
     res.raise_for_status()
     return res.content.decode()
 
+
 def expect_error_codes(exception, *codes):
     if getattr(exception, "response", None) and exception.response.get("Error", {}).get("Code", {}) not in codes:
         raise
+
 
 def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset()):
     """
@@ -353,8 +385,10 @@ def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset())
         return resources.ec2.Image(ami)
     else:
         if ami is None:
-            filters = dict(Owners=["self"],
-                           Filters=[dict(Name="state", Values=["available"]), dict(Name="architecture", Values=[arch])])
+            filters = dict(
+                Owners=["self"],
+                Filters=[dict(Name="state", Values=["available"]), dict(Name="architecture", Values=[arch])],
+            )
         else:
             filters = dict(Owners=["self"], Filters=[dict(Name="name", Values=[ami])])
         all_amis = resources.ec2.images.filter(**filters)
@@ -374,15 +408,19 @@ def resolve_ami(ami=None, arch="x86_64", tags=frozenset(), tag_keys=frozenset())
             raise AegeaException("Could not resolve AMI {}".format(dict(tags, ami=ami)))
         return amis[-1]
 
+
 offers_api = "https://pricing.us-east-1.amazonaws.com/offers/v1.0"
+
 
 def region_name(region_id):
     region_names, region_ids = {}, {}
     from botocore import loaders
+
     for partition_data in loaders.create_loader().load_data("endpoints")["partitions"]:
         region_names.update({k: v["description"] for k, v in partition_data["regions"].items()})
         region_ids.update({v: k for k, v in region_names.items()})
     return region_names[region_id]
+
 
 def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
     from ... import config
@@ -390,8 +428,9 @@ def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
     if filters is None:
         filters = [("location", region_name(clients.ec2.meta.region_name))]
 
-    get_products_args = dict(ServiceCode=service_code,
-                             Filters=[dict(Type="TERM_MATCH", Field=k, Value=v) for k, v in filters])
+    get_products_args = dict(
+        ServiceCode=service_code, Filters=[dict(Type="TERM_MATCH", Field=k, Value=v) for k, v in filters]
+    )
     cache_key = hashlib.sha256(json.dumps(get_products_args, sort_keys=True).encode()).hexdigest()[:32]
     service_code_filename = os.path.join(config.user_config_dir, f"pricing_cache_{cache_key}.json.gz")
     try:
@@ -411,6 +450,7 @@ def get_pricing_data(service_code, filters=None, max_cache_age_days=30):
         except Exception as e:
             print(e, file=sys.stderr)
     return pricing_data
+
 
 def get_products(service_code, region=None, filters=None, terms=None, max_cache_age_days=30):
     from ... import config
@@ -432,6 +472,7 @@ def get_products(service_code, region=None, filters=None, terms=None, max_cache_
             for price_dimension in term["priceDimensions"].values():
                 yield dict(dict(product, **term["termAttributes"]), **price_dimension)
 
+
 def get_ondemand_price_usd(region, instance_type, **kwargs):
     from ... import config
 
@@ -441,11 +482,13 @@ def get_ondemand_price_usd(region, instance_type, **kwargs):
             continue
         return product["pricePerUnit"]["USD"]
 
+
 def get_iam_role_for_instance(instance):
     instance = resources.ec2.Instance(resolve_instance_id(instance))
     profile = resources.iam.InstanceProfile(ARN(instance.iam_instance_profile["Arn"]).resource.split("/")[1])
     assert len(profile.roles) <= 1
     return profile.roles[0] if profile.roles else None
+
 
 def get_elb_dns_aliases():
     dns_aliases = {}
@@ -457,7 +500,9 @@ def get_elb_dns_aliases():
                     dns_aliases[value.rstrip(".").replace("dualstack.", "")] = rrs["Name"]
     return dns_aliases
 
+
 ip_ranges_api = "https://ip-ranges.amazonaws.com/ip-ranges.json"
+
 
 def get_public_ip_ranges(service="AMAZON", region=None):
     if region is None:
@@ -465,11 +510,14 @@ def get_public_ip_ranges(service="AMAZON", region=None):
     ranges = requests.get(ip_ranges_api).json()["prefixes"]
     return [r for r in ranges if r["service"] == service and r["region"] == region]
 
+
 def make_waiter(op, path, expected, matcher="path", delay=1, max_attempts=30):
     from botocore.waiter import SingleWaiterConfig, Waiter
+
     acceptor = dict(matcher=matcher, argument=path, expected=expected, state="success")
     waiter_cfg = dict(operation=op.__name__, delay=delay, maxAttempts=max_attempts, acceptors=[acceptor])
     return Waiter(op.__name__, SingleWaiterConfig(waiter_cfg), op)
+
 
 def resolve_log_group(name):
     for log_group in paginate(clients.logs.get_paginator("describe_log_groups"), logGroupNamePrefix=name):
@@ -477,6 +525,7 @@ def resolve_log_group(name):
             return log_group
     else:
         raise AegeaException(f"Log group {name} not found")
+
 
 def ensure_log_group(name):
     try:
@@ -488,6 +537,7 @@ def ensure_log_group(name):
             pass
         return resolve_log_group(name)
 
+
 def ensure_ecs_cluster(name):
     res = clients.ecs.describe_clusters(clusters=[name])
     if res.get("failures"):
@@ -497,20 +547,28 @@ def ensure_ecs_cluster(name):
             raise AegeaException(res)
     return res["clusters"][0]
 
-def get_cloudwatch_metric_stats(namespace, name, start_time=None, end_time=None, period=None, statistic="Average",
-                                resource=None, **kwargs):
+
+def get_cloudwatch_metric_stats(
+    namespace, name, start_time=None, end_time=None, period=None, statistic="Average", resource=None, **kwargs
+):
     start_time = datetime.utcnow() - period * 60 if start_time is None else start_time
     end_time = datetime.utcnow() if end_time is None else end_time
     cloudwatch = resources.cloudwatch if resource is None else resource
     metric = cloudwatch.Metric(namespace, name)
-    get_stats_args = dict(StartTime=start_time, EndTime=end_time, Statistics=[statistic],
-                          Dimensions=[dict(Name=k, Value=v) for k, v in kwargs.items()])
+    get_stats_args = dict(
+        StartTime=start_time,
+        EndTime=end_time,
+        Statistics=[statistic],
+        Dimensions=[dict(Name=k, Value=v) for k, v in kwargs.items()],
+    )
     if period is not None:
         get_stats_args.update(Period=period)
     return metric.get_statistics(**get_stats_args)
 
+
 def instance_type_completer(max_cache_age_days=30, **kwargs):
     return [p["instanceType"] for p in get_products("AmazonEC2")]
+
 
 instance_storage_shellcode = """
 aegea_bd=( $(shopt -s nullglob; readlink -f /dev/disk/by-id/nvme-Amazon_EC2_NVMe_Instance_Storage_AWS{{?????????????????,?????????????????-ns-?}} | sort | uniq) )

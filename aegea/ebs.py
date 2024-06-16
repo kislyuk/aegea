@@ -24,27 +24,35 @@ from .util.printing import get_cell, page_output, tabulate
 def complete_volume_id(**kwargs):
     return [i["VolumeId"] for i in clients.ec2.describe_volumes()["Volumes"]]
 
+
 def ebs(args):
     ebs_parser.print_help()
 
+
 ebs_parser = register_parser(ebs, help="Manage Elastic Block Store resources", description=__doc__)
+
 
 def ls(args):
     @lru_cache()
     def instance_id_to_name(i):
         return add_name(resources.ec2.Instance(i)).name
+
     table = [{f: get_cell(i, f) for f in args.columns} for i in filter_collection(resources.ec2.volumes, args)]
     if "attachments" in args.columns:
         for row in table:
             row["attachments"] = ", ".join(instance_id_to_name(a["InstanceId"]) for a in row["attachments"])
     page_output(tabulate(table, args))
 
+
 parser = register_filtering_parser(ls, parent=ebs_parser, help="List EC2 EBS volumes")
+
 
 def snapshots(args):
     page_output(filter_and_tabulate(resources.ec2.snapshots.filter(OwnerIds=[ARN.get_account_id()]), args))
 
+
 parser = register_filtering_parser(snapshots, parent=ebs_parser, help="List EC2 EBS snapshots")
+
 
 def create(args):
     if (args.format or args.mount) and not args.attach:
@@ -72,25 +80,31 @@ def create(args):
             raise
     return res
 
+
 parser_create = register_parser(create, parent=ebs_parser, help="Create an EBS volume")
 parser_create.add_argument("--dry-run", action="store_true")
 parser_create.add_argument("--snapshot-id")
 parser_create.add_argument("--availability-zone")
 parser_create.add_argument("--kms-key-id")
 parser_create.add_argument("--tags", nargs="+", metavar="TAG_NAME=VALUE")
-parser_create.add_argument("--attach", action="store_true",
-                           help="Attach volume to this instance (only valid when running on EC2)")
+parser_create.add_argument(
+    "--attach", action="store_true", help="Attach volume to this instance (only valid when running on EC2)"
+)
+
 
 def snapshot(args):
     return clients.ec2.create_snapshot(DryRun=args.dry_run, VolumeId=args.volume_id)
+
+
 parser_snapshot = register_parser(snapshot, parent=ebs_parser, help="Create an EBS snapshot")
 parser_snapshot.add_argument("volume_id").completer = complete_volume_id
 
+
 def attach_volume(args):
-    return clients.ec2.attach_volume(DryRun=args.dry_run,
-                                     VolumeId=args.volume_id,
-                                     InstanceId=args.instance,
-                                     Device=args.device)
+    return clients.ec2.attach_volume(
+        DryRun=args.dry_run, VolumeId=args.volume_id, InstanceId=args.instance, Device=args.device
+    )
+
 
 def find_volume_id(mountpoint):
     with open("/proc/mounts") as fh:
@@ -105,7 +119,10 @@ def find_volume_id(mountpoint):
             break
     else:
         raise Exception(f"EBS volume ID not found for mountpoint {mountpoint} (devnode {devnode})")
-    return re.search(r"Elastic_Block_Store_(vol[\w]+)", devnode_link).group(1).replace("vol", "vol-")
+    ebs_vol_id_match = re.search(r"Elastic_Block_Store_(vol[\w]+)", devnode_link)
+    assert ebs_vol_id_match is not None
+    return ebs_vol_id_match.group(1).replace("vol", "vol-")
+
 
 def find_devnode(volume_id):
     if os.path.exists("/dev/disk/by-id"):
@@ -119,8 +136,10 @@ def find_devnode(volume_id):
         return "/dev/" + attachment["Device"]
     raise Exception(f"Could not find devnode for {volume_id}")
 
+
 def get_fs_label(volume_id):
     return "aegv" + volume_id[4:12]
+
 
 def attach(args):
     if args.instance is None:
@@ -158,15 +177,25 @@ def attach(args):
         logger.info("Mounting %s at %s", args.volume_id, args.mount)
         subprocess.check_call(["mount", find_devnode(args.volume_id), args.mount], stdout=sys.stderr.buffer)
     return res
+
+
 parser_attach = register_parser(attach, parent=ebs_parser, help="Attach an EBS volume to an EC2 instance")
 parser_attach.add_argument("volume_id").completer = complete_volume_id
 parser_attach.add_argument("instance", type=resolve_instance_id, nargs="?")
-parser_attach.add_argument("--device", choices=["xvd" + chr(i + 1) for i in range(ord("a"), ord("z"))],
-                           help="Device node to attach volume to. Default: auto-select the first available node")
+parser_attach.add_argument(
+    "--device",
+    choices=["xvd" + chr(i + 1) for i in range(ord("a"), ord("z"))],
+    help="Device node to attach volume to. Default: auto-select the first available node",
+)
 for parser in parser_create, parser_attach:
-    parser.add_argument("--format", nargs="?", const="xfs",
-                        help="Use this command and arguments to format volume after attaching (only valid on EC2)")
+    parser.add_argument(
+        "--format",
+        nargs="?",
+        const="xfs",
+        help="Use this command and arguments to format volume after attaching (only valid on EC2)",
+    )
     parser.add_argument("--mount", nargs="?", const="/mnt", help="Mount volume on given mountpoint (only valid on EC2)")
+
 
 def detach(args):
     """
@@ -184,21 +213,26 @@ def detach(args):
         cmd = "umount {devnode} || (kill -9 $(lsof -t +f -- $(readlink -f {devnode}) | sort | uniq); umount {devnode} || umount -l {devnode})"  # noqa
         subprocess.call(cmd.format(devnode=find_devnode(volume_id)), shell=True)
     attachment = resources.ec2.Volume(volume_id).attachments[0]
-    res = clients.ec2.detach_volume(DryRun=args.dry_run,
-                                    VolumeId=volume_id,
-                                    InstanceId=attachment["InstanceId"],
-                                    Device=attachment["Device"],
-                                    Force=args.force)
+    res = clients.ec2.detach_volume(
+        DryRun=args.dry_run,
+        VolumeId=volume_id,
+        InstanceId=attachment["InstanceId"],
+        Device=attachment["Device"],
+        Force=args.force,
+    )
     clients.ec2.get_waiter("volume_available").wait(VolumeIds=[volume_id])
     if args.delete:
         logger.info("Deleting EBS volume %s", volume_id)
         clients.ec2.delete_volume(VolumeId=volume_id, DryRun=args.dry_run)
     return res
+
+
 parser_detach = register_parser(detach, parent=ebs_parser)
 parser_detach.add_argument("volume_id", help="EBS volume ID or mountpoint").completer = complete_volume_id
 parser_detach.add_argument("--unmount", action="store_true", help="Unmount the volume before detaching")
 parser_detach.add_argument("--delete", action="store_true", help="Delete the volume after detaching")
 parser_detach.add_argument("--force", action="store_true")
+
 
 def modify(args):
     modify_args = dict(VolumeId=args.volume_id, DryRun=args.dry_run)
@@ -214,13 +248,18 @@ def modify(args):
     #                          "optimizing", "pathAny")
     #     waiter.wait(VolumeIds=[args.volume_id])
     return res
+
+
 parser_modify = register_parser(modify, parent=ebs_parser, help="Change the size, type, or IOPS of an EBS volume")
 parser_modify.add_argument("volume_id").completer = complete_volume_id
 
 for parser in parser_create, parser_modify:
     parser.add_argument("--size-gb", dest="size", type=int, help="Volume size in gigabytes")
-    parser.add_argument("--volume-type", choices={"standard", "io1", "gp2", "sc1", "st1"},
-                        help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD")
+    parser.add_argument(
+        "--volume-type",
+        choices={"standard", "io1", "gp2", "sc1", "st1"},
+        help="io1, PIOPS SSD; gp2, general purpose SSD; sc1, cold HDD; st1, throughput optimized HDD",
+    )
     parser.add_argument("--iops", type=int)
 
 for parser in parser_snapshot, parser_attach, parser_detach, parser_modify:

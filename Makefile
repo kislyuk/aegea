@@ -6,9 +6,9 @@ aegea/constants.json:
 	python3 -c "import aegea; aegea.initialize(); from aegea.util.constants import write; write()"
 
 lint:
-	for dir in $$(dirname */__init__.py); do ruff $$dir; done
-	for script in $$(grep -r -l '/usr/bin/env python3' aegea/missions aegea/rootfs.skel scripts); do ruff $$script; done
-	mypy --check-untyped-defs --no-strict-optional $$(python3 setup.py --name)
+	for dir in $$(dirname */__init__.py); do ruff check $$dir; done
+	for script in $$(grep -r -l '/usr/bin/env python3' aegea/missions aegea/rootfs.skel scripts); do ruff check $$script; done
+	mypy --install-types --non-interactive
 
 test:
 	coverage run --source=$$(python3 setup.py --name) -m unittest discover --start-directory test --top-level-directory . --verbose

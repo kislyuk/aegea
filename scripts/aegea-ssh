@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-import os, sys, logging, pkgutil, importlib, subprocess
+import importlib
+import logging
+import os
+import pkgutil
+import subprocess
+import sys
 
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger("botocore.vendored.requests").setLevel(logging.ERROR)

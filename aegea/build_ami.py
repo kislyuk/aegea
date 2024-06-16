@@ -47,8 +47,9 @@ def build_ami(args):
 
     for i in range(args.cloud_init_timeout_seconds // args.cloud_init_poll_interval_seconds):
         try:
-            run_command("sudo jq --exit-status .v1.errors==[] /var/lib/cloud/data/result.json",
-                        instance_ids=[instance.id])
+            run_command(
+                "sudo jq --exit-status .v1.errors==[] /var/lib/cloud/data/result.json", instance_ids=[instance.id]
+            )
             break
         except clients.ssm.exceptions.InvalidInstanceId:
             wait()
@@ -67,8 +68,13 @@ def build_ami(args):
     image = instance.create_image(Name=args.name, Description=description, BlockDeviceMappings=get_bdm())
     tags = dict(args.tags)
     base_ami = resources.ec2.Image(args.ami)
-    tags.update(Owner=ARN.get_iam_username(), AegeaVersion=__version__,
-                Base=base_ami.id, BaseName=base_ami.name, BaseDescription=base_ami.description or "")
+    tags.update(
+        Owner=ARN.get_iam_username(),
+        AegeaVersion=__version__,
+        Base=base_ami.id,
+        BaseName=base_ami.name,
+        BaseDescription=base_ami.description or "",
+    )
     add_tags(image, **tags)
     logger.info("Waiting for %s to become available...", image.id)
     clients.ec2.get_waiter("image_available").wait(ImageIds=[image.id], WaiterConfig=dict(Delay=10, MaxAttempts=120))
@@ -79,24 +85,38 @@ def build_ami(args):
     instance.terminate()
     return dict(ImageID=image.id, **tags)
 
+
 parser = register_parser(build_ami, help="Build an EC2 AMI")
 parser.add_argument("name", help="Default: aegea-ARCH-YYYY-MM-DD-HH-MM", nargs="?")
 parser.add_argument("--snapshot-existing-host", type=str, metavar="HOST")
 parser.add_argument("--wait-for-ami", action="store_true")
 parser.add_argument("--ssh-key-name")
 parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_file", action="store_false")
-parser.add_argument("--instance-type", default=None,
-                    help="Instance type to use for building AMI (default: c5.xlarge for x86_64, c6gd.xlarge for arm64)")
-parser.add_argument("--architecture", default="x86_64", choices={"x86_64", "arm64"},
-                    help="CPU architecture for building the AMI")
+parser.add_argument(
+    "--instance-type",
+    default=None,
+    help="Instance type to use for building AMI (default: c5.xlarge for x86_64, c6gd.xlarge for arm64)",
+)
+parser.add_argument(
+    "--architecture", default="x86_64", choices={"x86_64", "arm64"}, help="CPU architecture for building the AMI"
+)
 parser.add_argument("--security-groups", nargs="+")
 parser.add_argument("--base-ami")
-parser.add_argument("--base-ami-distribution",
-                    help="Use AMI for this distribution (examples: Ubuntu:20.04, Amazon Linux:2")
+parser.add_argument(
+    "--base-ami-distribution", help="Use AMI for this distribution (examples: Ubuntu:20.04, Amazon Linux:2"
+)
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
-parser.add_argument("--tags", nargs="+", metavar="NAME=VALUE", type=lambda x: x.split("=", 1),
-                    help="Tag the resulting AMI with these tags")
+parser.add_argument(
+    "--tags",
+    nargs="+",
+    metavar="NAME=VALUE",
+    type=lambda x: x.split("=", 1),
+    help="Tag the resulting AMI with these tags",
+)
 parser.add_argument("--cloud-config-data", type=json.loads)
-parser.add_argument("--cloud-init-timeout-seconds", type=int,
-                    help="Approximate time in seconds to wait for cloud-init to finish before aborting.")
+parser.add_argument(
+    "--cloud-init-timeout-seconds",
+    type=int,
+    help="Approximate time in seconds to wait for cloud-init to finish before aborting.",
+)
 parser.add_argument("--iam-role", default=__name__)

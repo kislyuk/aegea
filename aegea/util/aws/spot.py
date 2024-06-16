@@ -9,9 +9,20 @@ from .iam import ensure_iam_role
 
 class SpotFleetBuilder(VerboseRepr):
     # TODO: vivify from toolspec; vivify from SFR ID; update with incremental cores/memory requirements
-    def __init__(self, launch_spec, cores=1, min_cores_per_instance=1, min_mem_per_core_gb=1.5, gpus_per_instance=0,
-                 min_ephemeral_storage_gb=0, spot_price=None, duration_hours=None, client_token=None,
-                 instance_type_prefixes=None, dry_run=False):
+    def __init__(
+        self,
+        launch_spec,
+        cores=1,
+        min_cores_per_instance=1,
+        min_mem_per_core_gb=1.5,
+        gpus_per_instance=0,
+        min_ephemeral_storage_gb=0,
+        spot_price=None,
+        duration_hours=None,
+        client_token=None,
+        instance_type_prefixes=None,
+        dry_run=False,
+    ):
         if spot_price is None:
             spot_price = 1
         if "SecurityGroupIds" in launch_spec:
@@ -28,21 +39,20 @@ class SpotFleetBuilder(VerboseRepr):
         self.instance_type_prefixes = instance_type_prefixes
         self.dry_run = dry_run
         self.iam_fleet_role = self.get_iam_fleet_role()
-        self.spot_fleet_request_config = dict(SpotPrice=str(spot_price),
-                                              TargetCapacity=cores,
-                                              IamFleetRole=self.iam_fleet_role.arn)
+        self.spot_fleet_request_config = dict(
+            SpotPrice=str(spot_price), TargetCapacity=cores, IamFleetRole=self.iam_fleet_role.arn
+        )
         if client_token:
             self.spot_fleet_request_config.update(ClientToken=client_token)
         if duration_hours:
             deadline = datetime.utcnow().replace(microsecond=0) + timedelta(hours=duration_hours)
-            self.spot_fleet_request_config.update(ValidUntil=deadline,
-                                                  TerminateInstancesWithExpiration=True)
+            self.spot_fleet_request_config.update(ValidUntil=deadline, TerminateInstancesWithExpiration=True)
 
     @classmethod
     def get_iam_fleet_role(cls):
-        return ensure_iam_role("SpotFleet",
-                               policies=["service-role/AmazonEC2SpotFleetTaggingRole"],
-                               trust=["spotfleet"])
+        return ensure_iam_role(
+            "SpotFleet", policies=["service-role/AmazonEC2SpotFleetTaggingRole"], trust=["spotfleet"]
+        )
 
     def instance_types(self, max_overprovision=3):
         def compute_ephemeral_storage_gb(instance_data):
@@ -71,14 +81,12 @@ class SpotFleetBuilder(VerboseRepr):
 
     def launch_specs(self, **kwargs):
         for instance_type, weighted_capacity in self.instance_types(**kwargs):
-            yield dict(self.launch_spec,
-                       InstanceType=instance_type,
-                       WeightedCapacity=weighted_capacity)
+            yield dict(self.launch_spec, InstanceType=instance_type, WeightedCapacity=weighted_capacity)
 
     def __call__(self, **kwargs):
         self.spot_fleet_request_config["LaunchSpecifications"] = list(self.launch_specs())
         logger.debug(self.spot_fleet_request_config)
-        res = clients.ec2.request_spot_fleet(DryRun=self.dry_run,
-                                             SpotFleetRequestConfig=self.spot_fleet_request_config,
-                                             **kwargs)
+        res = clients.ec2.request_spot_fleet(
+            DryRun=self.dry_run, SpotFleetRequestConfig=self.spot_fleet_request_config, **kwargs
+        )
         return res["SpotFleetRequestId"]

@@ -12,7 +12,7 @@ class Loader:
         if attr == "__name__":
             return "Loader"
         if attr == "__bases__":
-            return (object, )
+            return (object,)
         if attr == "__all__":
             return list(self.cache[self.factory])
         if attr == "__file__":
@@ -26,7 +26,9 @@ class Loader:
                 self.cache["client"][attr] = self.cache["resource"][attr].meta.client
             else:
                 import boto3
+
                 factory = getattr(boto3, self.factory)
-                self.cache[self.factory][attr] = factory(attr.replace("_", "-"),
-                                                         **self.client_kwargs.get(attr, self.client_kwargs["default"]))
+                self.cache[self.factory][attr] = factory(
+                    attr.replace("_", "-"), **self.client_kwargs.get(attr, self.client_kwargs["default"])
+                )
         return self.cache[self.factory][attr]
