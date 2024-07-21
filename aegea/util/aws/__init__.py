@@ -100,6 +100,8 @@ def ensure_vpc():
 
 def availability_zones():
     for az in clients.ec2.describe_availability_zones()["AvailabilityZones"]:
+        if az["ZoneId"] in config.vpc.avoid_az_ids:
+            continue
         yield az["ZoneName"]
 
 

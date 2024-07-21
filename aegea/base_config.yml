@@ -165,6 +165,8 @@ vpc:
   enable_dns_hostnames: true
   map_public_ip_on_launch: true
   assign_ipv6_address_on_creation: true
+  avoid_az_ids:
+    - use1-az3 # This AZ does not offer many modern instance types
 
 ls:
   resource: ec2
