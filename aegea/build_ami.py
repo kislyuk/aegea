@@ -35,6 +35,7 @@ def build_ami(args):
         hostname = f"{__name__}-{args.name}-{int(time.time())}".replace(".", "-").replace("_", "-")
         launch_args = launch_parser.parse_args(args=[hostname], namespace=copy.deepcopy(args))
         launch_args.iam_role = args.iam_role
+        launch_args.manage_iam = True
         launch_args.cloud_config_data.update(rootfs_skel_dirs=get_rootfs_skel_dirs(args))
         instance = resources.ec2.Instance(launch(launch_args)["instance_id"])
     sys.stderr.write(f"Waiting {args.cloud_init_timeout_seconds} seconds for cloud-init ...")
