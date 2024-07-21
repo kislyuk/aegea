@@ -48,8 +48,9 @@ def locate_ami(distribution, release, architecture):
     elif distribution == "Ubuntu":
         if architecture == "x86_64":
             architecture = "amd64"
-        ssm_param_name = "/aws/service/canonical/ubuntu/{product}/{release}/stable/current/{arch}/hvm/ebs-gp2/ami-id"
-        ssm_param_name = ssm_param_name.format(product="server", release=release, arch=architecture)
+        vol_type = "ebs-gp3" if release >= "23.10" else "ebs-gp2"
+        ssm_param_name = "/aws/service/canonical/ubuntu/{product}/{release}/stable/current/{arch}/hvm/{vol_type}/ami-id"
+        ssm_param_name = ssm_param_name.format(product="server", release=release, arch=architecture, vol_type=vol_type)
         ami_id = get_ssm_parameter(ssm_param_name)
         logger.info("Found %s for %s %s %s", ami_id, distribution, release, architecture)
         return resources.ec2.Image(ami_id)
