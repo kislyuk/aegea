@@ -140,7 +140,7 @@ parser.add_argument(
     nargs="*",
     help="AWS account IDs or IAM principal ARNs to grant read access. Use '*' to grant to all.",
 )
-parser.add_argument("--builder-image", default="ubuntu:18.04", help=argparse.SUPPRESS)
+parser.add_argument("--builder-image", default="ubuntu:24.04", help=argparse.SUPPRESS)
 parser.add_argument(
     "--builder-iam-policies",
     nargs="+",

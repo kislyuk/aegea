@@ -146,7 +146,7 @@ def launch(args):
     ami_tags = dict(tag.split("=", 1) for tag in args.ami_tags or [])
     arch = infer_architecture(instance_type=args.instance_type)
     if args.ubuntu_linux_ami:
-        args.ami = locate_ami("Ubuntu", release="20.04", architecture=arch)
+        args.ami = locate_ami("Ubuntu", release="24.04", architecture=arch)
     elif args.amazon_linux_ami:
         args.ami = locate_ami("Amazon Linux", release=str(args.amazon_linux_release), architecture=arch)
     else:

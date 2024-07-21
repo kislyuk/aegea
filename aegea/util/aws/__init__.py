@@ -32,7 +32,7 @@ def get_ssm_parameter(name):
 def locate_ami(distribution, release, architecture):
     """
     Examples::
-        locate_ami(distribution="Ubuntu", release="20.04", architecture="amd64")
+        locate_ami(distribution="Ubuntu", release="24.04", architecture="amd64")
         locate_ami(distribution="Amazon Linux", release="2023", architecture="arm64")
     """
     if distribution == "Amazon Linux":

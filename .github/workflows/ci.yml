@@ -12,11 +12,11 @@ env:
 
 jobs:
   CI:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 8
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{matrix.python-version}}
@@ -38,7 +38,7 @@ jobs:
         make test
     - uses: codecov/codecov-action@v3
   isort:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: isort/isort-action@v1.1.0

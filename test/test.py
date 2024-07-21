@@ -364,6 +364,8 @@ class TestAegea(unittest.TestCase):
         self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Ubuntu", "22.04", "amd64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Ubuntu", "22.04", "arm64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "24.04", "amd64").id.startswith("ami-"))
+        self.assertTrue(locate_ami("Ubuntu", "24.04", "arm64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Amazon Linux", "2", "amd64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Amazon Linux", "2", "arm64").id.startswith("ami-"))
         self.assertTrue(locate_ami("Amazon Linux", "2023", "amd64").id.startswith("ami-"))

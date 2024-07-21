@@ -103,7 +103,7 @@ parser.add_argument(
 parser.add_argument("--security-groups", nargs="+")
 parser.add_argument("--base-ami")
 parser.add_argument(
-    "--base-ami-distribution", help="Use AMI for this distribution (examples: Ubuntu:20.04, Amazon Linux:2"
+    "--base-ami-distribution", help="Use AMI for this distribution (examples: Ubuntu:24.04, Amazon Linux:2023"
 )
 parser.add_argument("--dry-run", "--dryrun", action="store_true")
 parser.add_argument(

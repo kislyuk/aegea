@@ -71,10 +71,10 @@ build_image:
     - ca-certificates
     - apt-transport-https
     - software-properties-common
-    # - bat # only available in 22.04 LTS
+    - bat
 
 build_docker_image:
-  base_image: ubuntu:20.04
+  base_image: ubuntu:24.04
   rootfs_skel_dirs:
     - auto
   commands:
@@ -86,7 +86,7 @@ build_docker_image:
 build_ami:
   tags: {}
   base_ami: auto
-  base_ami_distribution: Ubuntu:20.04
+  base_ami_distribution: Ubuntu:24.04
   architecture: x86_64
   default_builder_instance_type:
     x86_64: c5.xlarge
@@ -395,7 +395,7 @@ ecs_tasks:
 
 ecs_run:
   user: "0"
-  image: ubuntu:20.04
+  image: ubuntu:24.04
   fargate_cpu: "1 vCPU"
   fargate_memory: "2 GB"
   # See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html
