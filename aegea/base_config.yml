@@ -89,8 +89,8 @@ build_ami:
   base_ami_distribution: Ubuntu:24.04
   architecture: x86_64
   default_builder_instance_type:
-    x86_64: c5.xlarge
-    arm64: c6gd.xlarge
+    x86_64: c7a.xlarge
+    arm64: c7g.xlarge
   rootfs_skel_dirs:
     - auto
   packages:

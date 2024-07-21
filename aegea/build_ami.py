@@ -96,7 +96,7 @@ parser.add_argument("--no-verify-ssh-key-pem-file", dest="verify_ssh_key_pem_fil
 parser.add_argument(
     "--instance-type",
     default=None,
-    help="Instance type to use for building AMI (default: c5.xlarge for x86_64, c6gd.xlarge for arm64)",
+    help="Instance type to use for building AMI (default: c7a.xlarge for x86_64, c7g.xlarge for arm64)",
 )
 parser.add_argument(
     "--architecture", default="x86_64", choices={"x86_64", "arm64"}, help="CPU architecture for building the AMI"
