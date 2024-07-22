@@ -10,7 +10,7 @@ build_image:
   commands:
     - "rm -f /usr/lib/python*/EXTERNALLY-MANAGED"
     - "update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"
-    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.20.35 awscli==1.22.35 miniwdl==1.4.3"
+    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.34.145 awscli==1.33.27 miniwdl==1.12.1"
   packages:
     - language-pack-en
     - iptables-persistent
@@ -115,7 +115,7 @@ build_ami:
     - "update-grub"
     - "grub-install /dev/xvda"
     - "rm -f /usr/lib/python*/EXTERNALLY-MANAGED"
-    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.28.78 awscli==1.29.78 miniwdl==1.11.1"
+    - "pip3 install awscli-cwlogs==1.4.6 boto3==1.34.145 awscli==1.33.27 miniwdl==1.12.1"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
     - "systemctl mask apport.service apt-daily.service apt-daily-upgrade.service"
