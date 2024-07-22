@@ -8,6 +8,7 @@
 # build_docker_image and build_ami.
 build_image:
   commands:
+    - "rm -f /usr/lib/python*/EXTERNALLY-MANAGED"
     - "update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"
     - "pip3 install awscli-cwlogs==1.4.6 boto3==1.20.35 awscli==1.22.35 miniwdl==1.4.3"
   packages:
@@ -113,6 +114,7 @@ build_ami:
     - "sed -i -e '/^PermitRootLogin/ s/.*/PermitRootLogin no/' /etc/ssh/sshd_config"
     - "update-grub"
     - "grub-install /dev/xvda"
+    - "rm -f /usr/lib/python*/EXTERNALLY-MANAGED"
     - "pip3 install awscli-cwlogs==1.4.6 boto3==1.28.78 awscli==1.29.78 miniwdl==1.11.1"
     - "activate-global-python-argcomplete"
     - "dpkg-reconfigure debconf -f noninteractive -p critical"
