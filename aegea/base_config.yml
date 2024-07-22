@@ -31,7 +31,6 @@ build_image:
     - liblz4-dev
     - libgmp-dev
     - libmpfr-dev
-    - libhts-dev
     - libsqlite3-dev
     - libncurses5-dev
     - htop
