@@ -112,7 +112,7 @@ def add_time_bound_args(p, snap=0, start="-7d"):
 
 
 class hashabledict(dict):
-    def __hash__(self):
+    def __hash__(self):  # type: ignore
         return hash(tuple(sorted(self.items())))
 
 

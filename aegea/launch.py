@@ -278,7 +278,7 @@ def launch(args):
                     logger.warn(msg)
 
                     class InstanceSpotFleetBuilder(SpotFleetBuilder):
-                        def instance_types(self, **kwargs):
+                        def instance_types(self, **kwargs):  # type: ignore
                             yield args.instance_type, 1
 
                     spot_fleet_builder = InstanceSpotFleetBuilder(**spot_fleet_args)  # type: SpotFleetBuilder
