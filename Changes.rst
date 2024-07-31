@@ -1,3 +1,22 @@
+Changes for v4.5.0 (2024-07-30)
+===============================
+
+-  Remove stunnel, dstat, libncurses5-dev from base AMI
+
+-  Update dependencies
+
+-  Skip use1-az3 availability zone when creating subnets
+
+-  build_ami: use 7th generation instances
+
+-  build-ami: force manage_iam to true
+
+-  Use ebs-gp3 for ubuntu AMI parameter store lookup
+
+-  Use Ubuntu 24.04 by default
+
+-  Add more context sensitve help for config
+
 Changes for v4.4.1 (2023-05-25)
 ===============================
 
