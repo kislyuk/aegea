@@ -34,6 +34,7 @@ setuptools.setup(
         "ipwhois >= 1.2.0, < 2",
         "uritemplate >= 4.1.1, < 5",
         "chalice >= 1.31.2, < 2",
+        "certifi >= 2023.11.17",
     ],
     extras_require={
         "test": tests_require,
