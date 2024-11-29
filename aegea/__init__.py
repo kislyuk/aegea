@@ -6,7 +6,7 @@ For help with individual commands, run ``aegea <command> --help``.
 For help with configuration management, run ``aegea configure --help``.
 """
 
-import argparse
+import argparsez
 import datetime
 import errno
 import json
