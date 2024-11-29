@@ -85,7 +85,7 @@ def buckets(args):
     List S3 buckets. See also "aws s3 ls". Use "aws s3 ls NAME" to list bucket contents.
     """
     with ThreadPoolExecutor() as executor:
-        table = executor.map(describe_bucket_worker, filter_collection(resources.s3.buckets, args))
+        table = executor.map(describe_bucket_worker, resources.s3.buckets.all())
     page_output(tabulate(table, args))
 
 
