@@ -1,3 +1,12 @@
+Changes for v4.5.1 (2024-11-28)
+===============================
+
+-  Restore compatibility of aegea s3 buckets with latest boto3
+
+-  Explicitly depend on certifi
+
+-  Replace awscli-cwlogs with fluent-bit
+
 Changes for v4.5.0 (2024-07-30)
 ===============================
 
