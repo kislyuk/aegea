@@ -36,7 +36,7 @@ jobs:
       run: |
         export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
         make test
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v5
   isort:
     runs-on: ubuntu-latest
     steps:
@@ -47,3 +47,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v1
+      - uses: astral-sh/ruff-action@v1
+        with:
+          args: "format --check"
