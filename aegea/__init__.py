@@ -99,8 +99,9 @@ def initialize():
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s {}\n{}\n{}\n{} {}\n{}\n{}".format(
+        version="%(prog)s {} ({})\n{}\n{}\n{} {}\n{}\n{}".format(
             __version__,
+            os.path.abspath(sys.argv[0]),
             "boto3 " + boto3.__version__,
             "botocore " + botocore.__version__,
             platform.python_implementation(),
