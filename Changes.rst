@@ -1,3 +1,8 @@
+Changes for v4.5.3 (2026-02-01)
+===============================
+
+- Fix APT list compatibility issue
+
 Changes for v4.5.2 (2026-01-31)
 ===============================
 
