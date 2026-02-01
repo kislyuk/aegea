@@ -15,11 +15,11 @@ tests_require = [
     "mypy",
     "types-python-dateutil",
     "types-requests",
-    "types-PyYAML"
+    "types-PyYAML",
 ]
 
 batch_requires = [
-    "chalice"
+    "chalice",
 ]
 
 setuptools.setup(
