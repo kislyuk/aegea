@@ -50,7 +50,7 @@ class AegeaConfig(tweak.Config):
         return os.path.join(self.user_config_dir, "config.yml")
 
     @property
-    def __doc__(self):
+    def __doc__(self):  # type:ignore[override]
         sources = {0: "defaults", 1: "site configuration", 2: "user configuration"}
         doc = "Configuration sources:"
         for i, config_file in enumerate(self.config_files):

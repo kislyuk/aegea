@@ -23,6 +23,7 @@ files = [
 ]
 check_untyped_defs = true
 disallow_incomplete_defs = true
+exclude = ["aegea/util/aws/batch_events_lambda/app.py"]
 
 [[tool.mypy.overrides]]
 module = ["babel.*", "boto3.*", "botocore.*", "ipwhois.*", "paramiko.*", "tweak.*", "uritemplate.*"]

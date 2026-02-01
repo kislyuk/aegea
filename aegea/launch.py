@@ -325,6 +325,7 @@ def launch(args):
         expect_error_codes(e, "DryRunOperation")
         logger.info("Dry run succeeded")
         exit()
+    assert isinstance(instance, clients.ec2.Instance)
     instance.wait_until_running()
     if args.use_dns:
         dns_zone.update(args.hostname, instance.private_dns_name)
