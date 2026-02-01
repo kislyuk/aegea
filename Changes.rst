@@ -1,3 +1,10 @@
+Changes for v4.5.2 (2026-01-31)
+===============================
+
+- Make chalice optional due to pip dependency issue
+
+- Display path to executable in aegea –version
+
 Changes for v4.5.1 (2024-11-28)
 ===============================
 
