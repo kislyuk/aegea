@@ -8,7 +8,19 @@ import textwrap
 
 import setuptools
 
-tests_require = ["coverage", "wheel", "ruff", "mypy", "types-python-dateutil", "types-requests", "types-PyYAML"]
+tests_require = [
+    "coverage",
+    "wheel",
+    "ruff",
+    "mypy",
+    "types-python-dateutil",
+    "types-requests",
+    "types-PyYAML"
+]
+
+batch_requires = [
+    "chalice"
+]
 
 setuptools.setup(
     name="aegea",
@@ -33,11 +45,11 @@ setuptools.setup(
         "babel >= 2.10.3, < 3",
         "ipwhois >= 1.2.0, < 2",
         "uritemplate >= 4.1.1, < 5",
-        "chalice >= 1.31.2, < 2",
         "certifi >= 2023.11.17",
     ],
     extras_require={
         "test": tests_require,
+        "batch": batch_requires,
     },
     tests_require=tests_require,
     packages=setuptools.find_packages(exclude=["test"]),
